@@ -154,5 +154,34 @@ Route::middleware('web')->group(function (): void {
                 'facilities' => $facilities,
             ]);
         });
+
+        Route::get('/alerts', function () {
+            $alerts = Alert::query()
+                ->with([
+                    'facility:id,name,type,location',
+                    'tool:id,name,type,location',
+                ])
+                ->latest('triggered_at')
+                ->get([
+                    'id',
+                    'facility_id',
+                    'tool_id',
+                    'triggered_at',
+                    'alert_type',
+                    'severity',
+                    'message',
+                    'status',
+                ]);
+
+            return response()->json([
+                'stats' => [
+                    'total' => $alerts->count(),
+                    'open' => $alerts->where('status', 'open')->count(),
+                    'high_severity' => $alerts->where('severity', 'high')->count(),
+                    'facilities_affected' => $alerts->pluck('facility_id')->unique()->count(),
+                ],
+                'alerts' => $alerts->values(),
+            ]);
+        });
     });
 });

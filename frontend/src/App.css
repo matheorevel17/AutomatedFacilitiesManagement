@@ -257,6 +257,12 @@
   color: var(--text-h);
 }
 
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
 .compact-grid {
   margin-top: 1.25rem;
 }
@@ -265,6 +271,12 @@
   display: grid;
   gap: 0.3rem;
   margin-top: 0.8rem;
+}
+
+.alert-context {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.85rem;
 }
 
 .panel-header {
@@ -402,6 +414,7 @@
   }
 
   .stack-grid,
+  .alerts-grid,
   .facility-grid,
   .status-panel,
   .facilities-layout {
