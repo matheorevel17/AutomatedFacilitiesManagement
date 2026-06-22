@@ -211,6 +211,62 @@
   min-height: 18rem;
 }
 
+.facilities-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.facilities-sidebar,
+.facilities-main {
+  display: grid;
+  gap: 1rem;
+}
+
+.facility-selector-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.facility-selector-card {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  padding: 1rem;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.facility-selector-card:hover {
+  border-color: rgba(31, 95, 139, 0.3);
+  box-shadow: 0 12px 28px rgba(26, 44, 64, 0.08);
+}
+
+.facility-selector-card.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(31, 95, 139, 0.1);
+}
+
+.facility-selector-card strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--text-h);
+}
+
+.compact-grid {
+  margin-top: 1.25rem;
+}
+
+.tool-reading {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.8rem;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -347,7 +403,8 @@
 
   .stack-grid,
   .facility-grid,
-  .status-panel {
+  .status-panel,
+  .facilities-layout {
     grid-template-columns: 1fr;
   }
 

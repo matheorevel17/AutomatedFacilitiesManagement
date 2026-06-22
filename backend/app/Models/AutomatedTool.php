@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -37,6 +38,11 @@ class AutomatedTool extends Model
     public function sensorData(): HasMany
     {
         return $this->hasMany(SensorReading::class, 'tool_id');
+    }
+
+    public function latestSensorReading(): HasOne
+    {
+        return $this->hasOne(SensorReading::class, 'tool_id')->latestOfMany('recorded_at');
     }
 
     public function alerts(): HasMany

@@ -115,5 +115,44 @@ Route::middleware('web')->group(function (): void {
                     ]),
             ]);
         });
+
+        Route::get('/facilities', function () {
+            $facilities = Facility::query()
+                ->withCount([
+                    'automatedTools as tools_count',
+                    'alerts as open_alerts_count' => fn ($query) => $query->where('status', 'open'),
+                    'maintenanceTasks as active_tasks_count' => fn ($query) => $query->whereIn('status', ['pending', 'in_progress']),
+                ])
+                ->with([
+                    'automatedTools' => fn ($query) => $query
+                        ->withCount([
+                            'alerts as open_alerts_count' => fn ($alertQuery) => $alertQuery->where('status', 'open'),
+                        ])
+                        ->with([
+                            'latestSensorReading',
+                        ])
+                        ->orderBy('name'),
+                    'alerts' => fn ($query) => $query
+                        ->latest('triggered_at')
+                        ->limit(5),
+                    'maintenanceTasks' => fn ($query) => $query
+                        ->with(['assignedTo:id,name'])
+                        ->latest('updated_at')
+                        ->limit(5),
+                ])
+                ->orderBy('name')
+                ->get([
+                    'id',
+                    'name',
+                    'type',
+                    'description',
+                    'location',
+                    'status',
+                ]);
+
+            return response()->json([
+                'facilities' => $facilities,
+            ]);
+        });
     });
 });

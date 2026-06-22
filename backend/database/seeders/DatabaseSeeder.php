@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::query()->firstOrCreate(
+        User::query()->firstOrCreate(
             ['email' => 'admin@stagebali.test'],
             [
                 'name' => 'System Admin',
@@ -41,21 +41,70 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $facility = Facility::query()->firstOrCreate(
-            ['name' => 'Main Water Distribution System'],
+        $airConditioningFacility = Facility::query()->firstOrCreate(
+            ['name' => 'Air Conditioning System'],
             [
-                'type' => 'water_system',
-                'description' => 'Primary automated water facility for the main site.',
-                'location' => 'Building A',
+                'type' => 'air_conditioning',
+                'description' => 'Automated air conditioning facility used to control temperature, humidity, comfort, and energy usage inside the main community building.',
+                'location' => 'Community Building',
                 'status' => 'active',
             ],
         );
 
+        $waterFacility = Facility::query()->firstOrCreate(
+            ['name' => 'Water System'],
+            [
+                'type' => 'water_system',
+                'description' => 'Automated water distribution facility used to monitor flow, pressure, tank level, and water quality across the village network.',
+                'location' => 'Village Utility Zone',
+                'status' => 'active',
+            ],
+        );
+
+        $temperatureSensor = AutomatedTool::query()->firstOrCreate(
+            ['facility_id' => $airConditioningFacility->id, 'name' => 'Temperature Sensor AC-01'],
+            [
+                'type' => 'temperature_sensor',
+                'location' => 'Conference Room',
+                'normal_min' => 21.00,
+                'normal_max' => 25.00,
+                'unit' => '°C',
+                'status' => 'active',
+                'installation_date' => Carbon::now()->subMonths(4)->toDateString(),
+            ],
+        );
+
+        $humiditySensor = AutomatedTool::query()->firstOrCreate(
+            ['facility_id' => $airConditioningFacility->id, 'name' => 'Humidity Sensor AC-02'],
+            [
+                'type' => 'humidity_sensor',
+                'location' => 'Conference Room',
+                'normal_min' => 40.00,
+                'normal_max' => 60.00,
+                'unit' => '%',
+                'status' => 'active',
+                'installation_date' => Carbon::now()->subMonths(4)->toDateString(),
+            ],
+        );
+
+        $energyMeter = AutomatedTool::query()->firstOrCreate(
+            ['facility_id' => $airConditioningFacility->id, 'name' => 'Energy Meter AC-03'],
+            [
+                'type' => 'energy_meter',
+                'location' => 'Electrical Room',
+                'normal_min' => 0.00,
+                'normal_max' => 18.00,
+                'unit' => 'kWh',
+                'status' => 'active',
+                'installation_date' => Carbon::now()->subMonths(3)->toDateString(),
+            ],
+        );
+
         $pressureSensor = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $facility->id, 'name' => 'Pressure Sensor A1'],
+            ['facility_id' => $waterFacility->id, 'name' => 'Pressure Sensor WS-01'],
             [
                 'type' => 'pressure_sensor',
-                'location' => 'Pump Room',
+                'location' => 'Pump Station',
                 'normal_min' => 2.50,
                 'normal_max' => 4.50,
                 'unit' => 'bar',
@@ -65,9 +114,9 @@ class DatabaseSeeder extends Seeder
         );
 
         $flowMeter = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $facility->id, 'name' => 'Flow Meter A2'],
+            ['facility_id' => $waterFacility->id, 'name' => 'Flow Sensor WS-02'],
             [
-                'type' => 'flow_meter',
+                'type' => 'flow_sensor',
                 'location' => 'Distribution Line',
                 'normal_min' => 80.00,
                 'normal_max' => 140.00,
@@ -77,7 +126,41 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        $tankLevelSensor = AutomatedTool::query()->firstOrCreate(
+            ['facility_id' => $waterFacility->id, 'name' => 'Tank Level Sensor WS-03'],
+            [
+                'type' => 'water_level_sensor',
+                'location' => 'Main Tank',
+                'normal_min' => 45.00,
+                'normal_max' => 95.00,
+                'unit' => '%',
+                'status' => 'active',
+                'installation_date' => Carbon::now()->subMonths(5)->toDateString(),
+            ],
+        );
+
         $sensorSnapshots = [
+            [
+                'tool_id' => $temperatureSensor->id,
+                'recorded_at' => Carbon::now()->subMinutes(20)->startOfMinute(),
+                'value' => 23.40,
+                'unit' => '°C',
+                'status' => 'normal',
+            ],
+            [
+                'tool_id' => $humiditySensor->id,
+                'recorded_at' => Carbon::now()->subMinutes(18)->startOfMinute(),
+                'value' => 67.00,
+                'unit' => '%',
+                'status' => 'warning',
+            ],
+            [
+                'tool_id' => $energyMeter->id,
+                'recorded_at' => Carbon::now()->subMinutes(12)->startOfMinute(),
+                'value' => 21.80,
+                'unit' => 'kWh',
+                'status' => 'warning',
+            ],
             [
                 'tool_id' => $pressureSensor->id,
                 'recorded_at' => Carbon::now()->subMinutes(15)->startOfMinute(),
@@ -99,6 +182,13 @@ class DatabaseSeeder extends Seeder
                 'unit' => 'L/min',
                 'status' => 'normal',
             ],
+            [
+                'tool_id' => $tankLevelSensor->id,
+                'recorded_at' => Carbon::now()->subMinutes(2)->startOfMinute(),
+                'value' => 38.00,
+                'unit' => '%',
+                'status' => 'warning',
+            ],
         ];
 
         foreach ($sensorSnapshots as $snapshot) {
@@ -115,9 +205,23 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        $alert = Alert::query()->updateOrCreate(
+        $airAlert = Alert::query()->updateOrCreate(
             [
-                'facility_id' => $facility->id,
+                'facility_id' => $airConditioningFacility->id,
+                'tool_id' => $humiditySensor->id,
+                'alert_type' => 'humidity_high',
+                'status' => 'open',
+            ],
+            [
+                'triggered_at' => Carbon::now()->subMinutes(18)->startOfMinute(),
+                'severity' => 'medium',
+                'message' => 'Humidity level is above the configured comfort range.',
+            ],
+        );
+
+        $waterAlert = Alert::query()->updateOrCreate(
+            [
+                'facility_id' => $waterFacility->id,
                 'tool_id' => $pressureSensor->id,
                 'alert_type' => 'threshold_breach',
                 'status' => 'open',
@@ -131,12 +235,26 @@ class DatabaseSeeder extends Seeder
 
         MaintenanceTask::query()->updateOrCreate(
             [
-                'facility_id' => $facility->id,
+                'facility_id' => $airConditioningFacility->id,
+                'tool_id' => $humiditySensor->id,
+                'title' => 'Inspect humidity control and air circulation',
+            ],
+            [
+                'alert_id' => $airAlert->id,
+                'description' => 'Check filter condition, inspect ventilation path, and verify thermostat settings.',
+                'assigned_to_user_id' => $technician->id,
+                'status' => 'pending',
+            ],
+        );
+
+        MaintenanceTask::query()->updateOrCreate(
+            [
+                'facility_id' => $waterFacility->id,
                 'tool_id' => $pressureSensor->id,
                 'title' => 'Inspect pump pressure regulation',
             ],
             [
-                'alert_id' => $alert->id,
+                'alert_id' => $waterAlert->id,
                 'description' => 'Check valve operation and recalibrate the pressure sensor if needed.',
                 'assigned_to_user_id' => $technician->id,
                 'status' => 'in_progress',
