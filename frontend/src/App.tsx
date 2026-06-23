@@ -124,6 +124,46 @@ type AlertsData = {
   }
 }
 
+type MaintenanceTasksData = {
+  stats: {
+    in_progress: number
+    pending: number
+    resolved: number
+    total: number
+  }
+  tasks: Array<{
+    alert?: {
+      alert_type: string
+      id: number
+      severity: string
+      status: string
+    } | null
+    assignedTo?: {
+      id: number
+      name: string
+    } | null
+    created_at: string
+    description: string | null
+    facility?: {
+      id: number
+      location: string
+      name: string
+      type: string
+    } | null
+    id: number
+    resolved_at: string | null
+    status: string
+    title: string
+    tool?: {
+      id: number
+      location: string
+      name: string
+      type: string
+    } | null
+    updated_at: string
+  }>
+}
+
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
 const navigationItems: Array<{ id: AppPage; label: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -152,6 +192,7 @@ function App() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [facilitiesData, setFacilitiesData] = useState<FacilitiesData | null>(null)
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
+  const [maintenanceTasksData, setMaintenanceTasksData] = useState<MaintenanceTasksData | null>(null)
   const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null)
   const [email, setEmail] = useState('admin@stagebali.test')
   const [password, setPassword] = useState('password')
@@ -193,6 +234,17 @@ function App() {
     setAlertsData(alertsPayload)
   }
 
+  async function loadMaintenanceTasks() {
+    const maintenanceResponse = await apiFetch('/maintenance-tasks')
+
+    if (!maintenanceResponse.ok) {
+      throw new Error(`Maintenance tasks failed with ${maintenanceResponse.status}`)
+    }
+
+    const maintenancePayload = (await maintenanceResponse.json()) as MaintenanceTasksData
+    setMaintenanceTasksData(maintenancePayload)
+  }
+
   useEffect(() => {
     async function loadSession() {
       try {
@@ -213,6 +265,7 @@ function App() {
         await loadDashboard()
         await loadFacilities()
         await loadAlerts()
+        await loadMaintenanceTasks()
       } catch (fetchError) {
         if (fetchError instanceof Error) {
           setError(fetchError.message)
@@ -256,6 +309,7 @@ function App() {
       await loadDashboard()
       await loadFacilities()
       await loadAlerts()
+      await loadMaintenanceTasks()
     } catch (loginError) {
       if (loginError instanceof Error) {
         setError(loginError.message)
@@ -274,6 +328,7 @@ function App() {
       setDashboard(null)
       setFacilitiesData(null)
       setAlertsData(null)
+      setMaintenanceTasksData(null)
       setSelectedFacilityId(null)
       setActivePage('dashboard')
     } catch (logoutError) {
@@ -768,17 +823,86 @@ function App() {
       ) : null}
 
       {activePage === 'maintenance' ? (
-        <section className="page-placeholder">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Maintenance module</p>
-              <h2>Maintenance Tasks</h2>
+        <>
+          <section className="hero-panel">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Maintenance module</p>
+                <h1>Maintenance tasks overview.</h1>
+              </div>
+              <button className="logout-button" type="button" onClick={handleLogout}>
+                Logout
+              </button>
             </div>
-          </div>
-          <p className="lede">
-            This page will contain task tracking, assignments, progress, and updates created after alerts.
-          </p>
-        </section>
+            <p className="lede">
+              Track the interventions created after alerts, see assignments, and follow the operational status of
+              each maintenance task.
+            </p>
+
+            <div className="stack-grid">
+              <article>
+                <span>Total tasks</span>
+                <strong>{maintenanceTasksData?.stats.total ?? 0}</strong>
+              </article>
+              <article>
+                <span>Pending</span>
+                <strong>{maintenanceTasksData?.stats.pending ?? 0}</strong>
+              </article>
+              <article>
+                <span>In progress</span>
+                <strong>{maintenanceTasksData?.stats.in_progress ?? 0}</strong>
+              </article>
+              <article>
+                <span>Resolved</span>
+                <strong>{maintenanceTasksData?.stats.resolved ?? 0}</strong>
+              </article>
+            </div>
+          </section>
+
+          <section className="section-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Task tracking</p>
+                <h2>All maintenance tasks</h2>
+              </div>
+            </div>
+
+            <div className="maintenance-grid">
+              {maintenanceTasksData?.tasks.length ? (
+                maintenanceTasksData.tasks.map((task) => (
+                  <article className="list-card" key={task.id}>
+                    <div className="list-row">
+                      <span className={`pill ${task.status === 'in_progress' ? 'pending' : task.status === 'resolved' ? 'ok' : 'error'}`}>
+                        {task.status}
+                      </span>
+                      <span className="list-meta">{task.facility?.name ?? 'Unknown facility'}</span>
+                    </div>
+
+                    <h3>{task.title}</h3>
+                    <p>{task.description ?? 'No detailed description yet.'}</p>
+
+                    <div className="alert-context">
+                      <span className="list-meta">
+                        Tool: {task.tool?.name ?? 'Unknown'} • {task.tool?.type ?? 'N/A'}
+                      </span>
+                      <span className="list-meta">
+                        Assigned to: {task.assignedTo?.name ?? 'unassigned'}
+                      </span>
+                      <span className="list-meta">
+                        Related alert: {task.alert?.alert_type ?? 'None'} ({task.alert?.severity ?? 'N/A'})
+                      </span>
+                      <span className="list-meta">
+                        Updated: {new Date(task.updated_at).toLocaleString()}
+                      </span>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <p className="empty-state">No maintenance tasks recorded yet.</p>
+              )}
+            </div>
+          </section>
+        </>
       ) : null}
     </main>
   )

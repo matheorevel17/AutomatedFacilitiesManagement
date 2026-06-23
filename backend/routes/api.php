@@ -183,5 +183,39 @@ Route::middleware('web')->group(function (): void {
                 'alerts' => $alerts->values(),
             ]);
         });
+
+        Route::get('/maintenance-tasks', function () {
+            $tasks = MaintenanceTask::query()
+                ->with([
+                    'assignedTo:id,name',
+                    'facility:id,name,type,location',
+                    'tool:id,name,type,location',
+                    'alert:id,alert_type,severity,status',
+                ])
+                ->latest('updated_at')
+                ->get([
+                    'id',
+                    'alert_id',
+                    'facility_id',
+                    'tool_id',
+                    'assigned_to_user_id',
+                    'title',
+                    'description',
+                    'status',
+                    'created_at',
+                    'resolved_at',
+                    'updated_at',
+                ]);
+
+            return response()->json([
+                'stats' => [
+                    'total' => $tasks->count(),
+                    'pending' => $tasks->where('status', 'pending')->count(),
+                    'in_progress' => $tasks->where('status', 'in_progress')->count(),
+                    'resolved' => $tasks->where('status', 'resolved')->count(),
+                ],
+                'tasks' => $tasks->values(),
+            ]);
+        });
     });
 });

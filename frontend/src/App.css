@@ -263,6 +263,12 @@
   gap: 0.9rem;
 }
 
+.maintenance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
 .compact-grid {
   margin-top: 1.25rem;
 }
@@ -415,6 +421,7 @@
 
   .stack-grid,
   .alerts-grid,
+  .maintenance-grid,
   .facility-grid,
   .status-panel,
   .facilities-layout {
