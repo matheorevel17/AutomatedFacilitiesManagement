@@ -131,7 +131,7 @@ Route::middleware('web')->group(function (): void {
                         ->with([
                             'latestSensorReading',
                         ])
-                        ->orderBy('name'),
+                        ->orderBy('id'),
                     'alerts' => fn ($query) => $query
                         ->latest('triggered_at')
                         ->limit(5),

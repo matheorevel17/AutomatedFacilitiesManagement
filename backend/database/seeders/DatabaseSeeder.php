@@ -61,129 +61,224 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        $temperatureSensor = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $airConditioningFacility->id, 'name' => 'Temperature Sensor AC-01'],
-            [
-                'type' => 'temperature_sensor',
-                'location' => 'Conference Room',
-                'normal_min' => 21.00,
-                'normal_max' => 25.00,
-                'unit' => '°C',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(4)->toDateString(),
+        $toolDefinitions = [
+            $waterFacility->id => [
+                [
+                    'name' => 'Pressure Sensor',
+                    'type' => 'pressure_sensor',
+                    'location' => 'Pump Station',
+                    'normal_min' => 2.50,
+                    'normal_max' => 4.50,
+                    'unit' => 'bar',
+                    'installed_months_ago' => 6,
+                ],
+                [
+                    'name' => 'Flow Sensor',
+                    'type' => 'flow_sensor',
+                    'location' => 'Distribution Line',
+                    'normal_min' => 80.00,
+                    'normal_max' => 140.00,
+                    'unit' => 'L/min',
+                    'installed_months_ago' => 4,
+                ],
+                [
+                    'name' => 'Water Level Sensor',
+                    'type' => 'water_level_sensor',
+                    'location' => 'Main Tank',
+                    'normal_min' => 45.00,
+                    'normal_max' => 95.00,
+                    'unit' => '%',
+                    'installed_months_ago' => 5,
+                ],
+                [
+                    'name' => 'Smart Valve',
+                    'type' => 'smart_valve',
+                    'location' => 'Distribution Valve Chamber',
+                    'normal_min' => 0.00,
+                    'normal_max' => 100.00,
+                    'unit' => '% open',
+                    'installed_months_ago' => 3,
+                ],
+                [
+                    'name' => 'Pump Controller',
+                    'type' => 'pump_controller',
+                    'location' => 'Pump Station Control Panel',
+                    'normal_min' => 0.00,
+                    'normal_max' => 100.00,
+                    'unit' => '% load',
+                    'installed_months_ago' => 3,
+                ],
+                [
+                    'name' => 'pH Sensor',
+                    'type' => 'ph_sensor',
+                    'location' => 'Water Quality Chamber',
+                    'normal_min' => 6.50,
+                    'normal_max' => 8.50,
+                    'unit' => 'pH',
+                    'installed_months_ago' => 2,
+                ],
+                [
+                    'name' => 'Turbidity Sensor',
+                    'type' => 'turbidity_sensor',
+                    'location' => 'Water Quality Chamber',
+                    'normal_min' => 0.00,
+                    'normal_max' => 5.00,
+                    'unit' => 'NTU',
+                    'installed_months_ago' => 2,
+                ],
+                [
+                    'name' => 'Water Pollution Sensor',
+                    'type' => 'water_pollution_sensor',
+                    'location' => 'Water Quality Chamber',
+                    'normal_min' => 0.00,
+                    'normal_max' => 50.00,
+                    'unit' => 'ppm',
+                    'installed_months_ago' => 2,
+                ],
             ],
-        );
+            $airConditioningFacility->id => [
+                [
+                    'name' => 'Temperature Sensor',
+                    'type' => 'temperature_sensor',
+                    'location' => 'Conference Room',
+                    'normal_min' => 21.00,
+                    'normal_max' => 25.00,
+                    'unit' => '°C',
+                    'installed_months_ago' => 4,
+                ],
+                [
+                    'name' => 'Humidity Sensor',
+                    'type' => 'humidity_sensor',
+                    'location' => 'Conference Room',
+                    'normal_min' => 40.00,
+                    'normal_max' => 60.00,
+                    'unit' => '%',
+                    'installed_months_ago' => 4,
+                ],
+                [
+                    'name' => 'Energy Meter',
+                    'type' => 'energy_meter',
+                    'location' => 'Electrical Room',
+                    'normal_min' => 0.00,
+                    'normal_max' => 18.00,
+                    'unit' => 'kWh',
+                    'installed_months_ago' => 3,
+                ],
+                [
+                    'name' => 'AC Controller',
+                    'type' => 'ac_controller',
+                    'location' => 'HVAC Control Cabinet',
+                    'normal_min' => 18.00,
+                    'normal_max' => 26.00,
+                    'unit' => '°C setpoint',
+                    'installed_months_ago' => 3,
+                ],
+                [
+                    'name' => 'CO₂ Sensor',
+                    'type' => 'co2_sensor',
+                    'location' => 'Main Hall',
+                    'normal_min' => 400.00,
+                    'normal_max' => 1000.00,
+                    'unit' => 'ppm',
+                    'installed_months_ago' => 2,
+                ],
+                [
+                    'name' => 'Air Pollution Sensor',
+                    'type' => 'air_pollution_sensor',
+                    'location' => 'Main Hall',
+                    'normal_min' => 0.00,
+                    'normal_max' => 50.00,
+                    'unit' => 'AQI',
+                    'installed_months_ago' => 2,
+                ],
+                [
+                    'name' => 'PM2.5 / Dust Sensor',
+                    'type' => 'pm25_dust_sensor',
+                    'location' => 'Air Intake',
+                    'normal_min' => 0.00,
+                    'normal_max' => 15.00,
+                    'unit' => 'µg/m³',
+                    'installed_months_ago' => 2,
+                ],
+            ],
+        ];
 
-        $humiditySensor = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $airConditioningFacility->id, 'name' => 'Humidity Sensor AC-02'],
-            [
-                'type' => 'humidity_sensor',
-                'location' => 'Conference Room',
-                'normal_min' => 40.00,
-                'normal_max' => 60.00,
-                'unit' => '%',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(4)->toDateString(),
-            ],
-        );
+        $expectedToolNames = collect($toolDefinitions)
+            ->flatten(1)
+            ->pluck('name')
+            ->all();
 
-        $energyMeter = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $airConditioningFacility->id, 'name' => 'Energy Meter AC-03'],
-            [
-                'type' => 'energy_meter',
-                'location' => 'Electrical Room',
-                'normal_min' => 0.00,
-                'normal_max' => 18.00,
-                'unit' => 'kWh',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(3)->toDateString(),
-            ],
-        );
+        AutomatedTool::query()
+            ->whereIn('facility_id', [$airConditioningFacility->id, $waterFacility->id])
+            ->whereNotIn('name', $expectedToolNames)
+            ->delete();
 
-        $pressureSensor = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $waterFacility->id, 'name' => 'Pressure Sensor WS-01'],
-            [
-                'type' => 'pressure_sensor',
-                'location' => 'Pump Station',
-                'normal_min' => 2.50,
-                'normal_max' => 4.50,
-                'unit' => 'bar',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(6)->toDateString(),
-            ],
-        );
+        $tools = [];
 
-        $flowMeter = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $waterFacility->id, 'name' => 'Flow Sensor WS-02'],
-            [
-                'type' => 'flow_sensor',
-                'location' => 'Distribution Line',
-                'normal_min' => 80.00,
-                'normal_max' => 140.00,
-                'unit' => 'L/min',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(4)->toDateString(),
-            ],
-        );
-
-        $tankLevelSensor = AutomatedTool::query()->firstOrCreate(
-            ['facility_id' => $waterFacility->id, 'name' => 'Tank Level Sensor WS-03'],
-            [
-                'type' => 'water_level_sensor',
-                'location' => 'Main Tank',
-                'normal_min' => 45.00,
-                'normal_max' => 95.00,
-                'unit' => '%',
-                'status' => 'active',
-                'installation_date' => Carbon::now()->subMonths(5)->toDateString(),
-            ],
-        );
+        foreach ($toolDefinitions as $facilityId => $definitions) {
+            foreach ($definitions as $definition) {
+                $tools[$definition['type']] = AutomatedTool::query()->updateOrCreate(
+                    ['facility_id' => $facilityId, 'name' => $definition['name']],
+                    [
+                        'type' => $definition['type'],
+                        'location' => $definition['location'],
+                        'normal_min' => $definition['normal_min'],
+                        'normal_max' => $definition['normal_max'],
+                        'unit' => $definition['unit'],
+                        'status' => 'active',
+                        'installation_date' => Carbon::now()
+                            ->subMonths($definition['installed_months_ago'])
+                            ->toDateString(),
+                    ],
+                );
+            }
+        }
 
         $sensorSnapshots = [
             [
-                'tool_id' => $temperatureSensor->id,
+                'tool_id' => $tools['temperature_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(20)->startOfMinute(),
                 'value' => 23.40,
                 'unit' => '°C',
                 'status' => 'normal',
             ],
             [
-                'tool_id' => $humiditySensor->id,
+                'tool_id' => $tools['humidity_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(18)->startOfMinute(),
                 'value' => 67.00,
                 'unit' => '%',
                 'status' => 'warning',
             ],
             [
-                'tool_id' => $energyMeter->id,
+                'tool_id' => $tools['energy_meter']->id,
                 'recorded_at' => Carbon::now()->subMinutes(12)->startOfMinute(),
                 'value' => 21.80,
                 'unit' => 'kWh',
                 'status' => 'warning',
             ],
             [
-                'tool_id' => $pressureSensor->id,
+                'tool_id' => $tools['pressure_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(15)->startOfMinute(),
                 'value' => 3.80,
                 'unit' => 'bar',
                 'status' => 'normal',
             ],
             [
-                'tool_id' => $pressureSensor->id,
+                'tool_id' => $tools['pressure_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(5)->startOfMinute(),
                 'value' => 5.20,
                 'unit' => 'bar',
                 'status' => 'warning',
             ],
             [
-                'tool_id' => $flowMeter->id,
+                'tool_id' => $tools['flow_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(3)->startOfMinute(),
                 'value' => 115.00,
                 'unit' => 'L/min',
                 'status' => 'normal',
             ],
             [
-                'tool_id' => $tankLevelSensor->id,
+                'tool_id' => $tools['water_level_sensor']->id,
                 'recorded_at' => Carbon::now()->subMinutes(2)->startOfMinute(),
                 'value' => 38.00,
                 'unit' => '%',
@@ -208,7 +303,7 @@ class DatabaseSeeder extends Seeder
         $airAlert = Alert::query()->updateOrCreate(
             [
                 'facility_id' => $airConditioningFacility->id,
-                'tool_id' => $humiditySensor->id,
+                'tool_id' => $tools['humidity_sensor']->id,
                 'alert_type' => 'humidity_high',
                 'status' => 'open',
             ],
@@ -222,7 +317,7 @@ class DatabaseSeeder extends Seeder
         $waterAlert = Alert::query()->updateOrCreate(
             [
                 'facility_id' => $waterFacility->id,
-                'tool_id' => $pressureSensor->id,
+                'tool_id' => $tools['pressure_sensor']->id,
                 'alert_type' => 'threshold_breach',
                 'status' => 'open',
             ],
@@ -236,7 +331,7 @@ class DatabaseSeeder extends Seeder
         MaintenanceTask::query()->updateOrCreate(
             [
                 'facility_id' => $airConditioningFacility->id,
-                'tool_id' => $humiditySensor->id,
+                'tool_id' => $tools['humidity_sensor']->id,
                 'title' => 'Inspect humidity control and air circulation',
             ],
             [
@@ -250,7 +345,7 @@ class DatabaseSeeder extends Seeder
         MaintenanceTask::query()->updateOrCreate(
             [
                 'facility_id' => $waterFacility->id,
-                'tool_id' => $pressureSensor->id,
+                'tool_id' => $tools['pressure_sensor']->id,
                 'title' => 'Inspect pump pressure regulation',
             ],
             [
