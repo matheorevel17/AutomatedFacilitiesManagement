@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchAlerts } from './api/alerts'
+import { fetchAutomatedTools } from './api/automatedTools'
 import { getCurrentUser, login as loginRequest, logout as logoutRequest } from './api/auth'
 import { fetchDashboard } from './api/dashboard'
 import { fetchFacilities } from './api/facilities'
@@ -8,18 +9,28 @@ import { fetchMaintenanceTasks } from './api/maintenanceTasks'
 import './App.css'
 import { TopNav } from './components/TopNav'
 import { AlertsPage } from './pages/AlertsPage'
+import { AutomatedToolsPage } from './pages/AutomatedToolsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FacilitiesPage } from './pages/FacilitiesPage'
 import { LoginPage } from './pages/LoginPage'
 import { MaintenanceTasksPage } from './pages/MaintenanceTasksPage'
 import { SessionLoadingPage } from './pages/SessionLoadingPage'
-import type { AlertsData, AppPage, AuthUser, DashboardData, FacilitiesData, MaintenanceTasksData } from './types/app'
+import type {
+  AlertsData,
+  AppPage,
+  AuthUser,
+  AutomatedToolsData,
+  DashboardData,
+  FacilitiesData,
+  MaintenanceTasksData,
+} from './types/app'
 
 function App() {
   const [activePage, setActivePage] = useState<AppPage>('dashboard')
   const [user, setUser] = useState<AuthUser | null>(null)
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [facilitiesData, setFacilitiesData] = useState<FacilitiesData | null>(null)
+  const [automatedToolsData, setAutomatedToolsData] = useState<AutomatedToolsData | null>(null)
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
   const [maintenanceTasksData, setMaintenanceTasksData] = useState<MaintenanceTasksData | null>(null)
   const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null)
@@ -43,18 +54,23 @@ function App() {
     setAlertsData(await fetchAlerts())
   }
 
+  async function loadAutomatedTools() {
+    setAutomatedToolsData(await fetchAutomatedTools())
+  }
+
   async function loadMaintenanceTasks() {
     setMaintenanceTasksData(await fetchMaintenanceTasks())
   }
 
   async function loadAppData() {
-    await Promise.all([loadDashboard(), loadFacilities(), loadAlerts(), loadMaintenanceTasks()])
+    await Promise.all([loadDashboard(), loadFacilities(), loadAutomatedTools(), loadAlerts(), loadMaintenanceTasks()])
   }
 
   function resetAppData() {
     setUser(null)
     setDashboard(null)
     setFacilitiesData(null)
+    setAutomatedToolsData(null)
     setAlertsData(null)
     setMaintenanceTasksData(null)
     setSelectedFacilityId(null)
@@ -149,6 +165,14 @@ function App() {
           selectedFacilityId={selectedFacilityId}
           onLogout={handleLogout}
           onSelectedFacilityChange={setSelectedFacilityId}
+        />
+      ) : null}
+
+      {activePage === 'automated-tools' ? (
+        <AutomatedToolsPage
+          automatedToolsData={automatedToolsData}
+          onDataChanged={loadAppData}
+          onLogout={handleLogout}
         />
       ) : null}
 

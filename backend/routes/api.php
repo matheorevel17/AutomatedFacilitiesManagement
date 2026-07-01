@@ -18,6 +18,12 @@ Route::get('/health', function () {
 });
 
 Route::middleware('web')->group(function (): void {
+    Route::get('/csrf-token', function (Request $request) {
+        return response()->json([
+            'csrf_token' => $request->session()->token(),
+        ]);
+    });
+
     Route::post('/login', function (Request $request) {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -152,6 +158,94 @@ Route::middleware('web')->group(function (): void {
 
             return response()->json([
                 'facilities' => $facilities,
+            ]);
+        });
+
+        Route::get('/automated-tools', function () {
+            $tools = AutomatedTool::query()
+                ->with([
+                    'facility:id,name,type,location',
+                    'latestSensorReading',
+                ])
+                ->withCount([
+                    'alerts as open_alerts_count' => fn ($query) => $query->where('status', 'open'),
+                ])
+                ->orderBy('facility_id')
+                ->orderBy('id')
+                ->get([
+                    'id',
+                    'facility_id',
+                    'name',
+                    'type',
+                    'location',
+                    'normal_min',
+                    'normal_max',
+                    'unit',
+                    'status',
+                    'installation_date',
+                ]);
+
+            return response()->json([
+                'stats' => [
+                    'total' => $tools->count(),
+                    'active' => $tools->where('status', 'active')->count(),
+                    'inactive' => $tools->where('status', 'inactive')->count(),
+                    'maintenance' => $tools->where('status', 'maintenance')->count(),
+                ],
+                'facilities' => Facility::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'type', 'location', 'status']),
+                'tools' => $tools,
+            ]);
+        });
+
+        Route::post('/automated-tools', function (Request $request) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'name' => ['required', 'string', 'max:255'],
+                'type' => ['required', 'string', 'max:255'],
+                'location' => ['required', 'string', 'max:255'],
+                'normal_min' => ['required', 'numeric'],
+                'normal_max' => ['required', 'numeric', 'gte:normal_min'],
+                'unit' => ['required', 'string', 'max:30'],
+                'status' => ['required', 'string', 'in:active,inactive,maintenance'],
+                'installation_date' => ['nullable', 'date'],
+            ]);
+
+            $tool = AutomatedTool::query()->create($data);
+
+            return response()->json([
+                'message' => 'Automated tool created successfully.',
+                'tool' => $tool->load('facility:id,name,type,location'),
+            ], 201);
+        });
+
+        Route::patch('/automated-tools/{automatedTool}', function (Request $request, AutomatedTool $automatedTool) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'name' => ['required', 'string', 'max:255'],
+                'type' => ['required', 'string', 'max:255'],
+                'location' => ['required', 'string', 'max:255'],
+                'normal_min' => ['required', 'numeric'],
+                'normal_max' => ['required', 'numeric', 'gte:normal_min'],
+                'unit' => ['required', 'string', 'max:30'],
+                'status' => ['required', 'string', 'in:active,inactive,maintenance'],
+                'installation_date' => ['nullable', 'date'],
+            ]);
+
+            $automatedTool->update($data);
+
+            return response()->json([
+                'message' => 'Automated tool updated successfully.',
+                'tool' => $automatedTool->load('facility:id,name,type,location'),
+            ]);
+        });
+
+        Route::delete('/automated-tools/{automatedTool}', function (AutomatedTool $automatedTool) {
+            $automatedTool->delete();
+
+            return response()->json([
+                'message' => 'Automated tool deleted successfully.',
             ]);
         });
 

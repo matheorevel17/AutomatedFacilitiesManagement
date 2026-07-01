@@ -1,5 +1,5 @@
 import type { AuthUser } from '../types/app'
-import { apiFetch } from './client'
+import { apiFetch, clearCsrfToken } from './client'
 
 type LoginResponse =
   | { message?: string; user?: AuthUser }
@@ -42,4 +42,5 @@ export async function login(email: string, password: string) {
 
 export async function logout() {
   await apiFetch('/logout', { method: 'POST' })
+  clearCsrfToken()
 }

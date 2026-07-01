@@ -1,4 +1,4 @@
-export type AppPage = 'dashboard' | 'facilities' | 'alerts' | 'maintenance'
+export type AppPage = 'dashboard' | 'facilities' | 'automated-tools' | 'alerts' | 'maintenance'
 
 export type AuthUser = {
   email: string
@@ -118,6 +118,59 @@ export type AlertsData = {
     open: number
     total: number
   }
+}
+
+export type AutomatedToolPayload = {
+  facility_id: number
+  installation_date: string | null
+  location: string
+  name: string
+  normal_max: number
+  normal_min: number
+  status: string
+  type: string
+  unit: string
+}
+
+export type AutomatedToolsData = {
+  facilities: Array<{
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
+  }>
+  stats: {
+    active: number
+    inactive: number
+    maintenance: number
+    total: number
+  }
+  tools: Array<{
+    facility?: {
+      id: number
+      location: string
+      name: string
+      type: string
+    } | null
+    facility_id: number
+    id: number
+    installation_date: string | null
+    latest_sensor_reading?: {
+      recorded_at: string
+      status: string
+      unit: string
+      value: string
+    } | null
+    location: string
+    name: string
+    normal_max: string
+    normal_min: string
+    open_alerts_count: number
+    status: string
+    type: string
+    unit: string
+  }>
 }
 
 export type MaintenanceTasksData = {
