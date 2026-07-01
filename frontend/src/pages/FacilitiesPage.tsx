@@ -1,22 +1,139 @@
-import type { FacilitiesData } from '../types/app'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { createFacility, deleteFacility, updateFacility } from '../api/facilities'
+import type { FacilitiesData, FacilityPayload } from '../types/app'
 
 type FacilitiesPageProps = {
   facilitiesData: FacilitiesData | null
   selectedFacilityId: number | null
+  onDataChanged: () => Promise<void>
   onLogout: () => void
   onSelectedFacilityChange: (facilityId: number) => void
+}
+
+type FacilityFormState = {
+  description: string
+  location: string
+  name: string
+  status: string
+  type: string
+}
+
+const emptyForm: FacilityFormState = {
+  description: '',
+  location: '',
+  name: '',
+  status: 'active',
+  type: '',
+}
+
+function getStatusClass(status: string) {
+  if (status === 'critical') {
+    return 'error'
+  }
+
+  if (status === 'warning' || status === 'inactive') {
+    return 'pending'
+  }
+
+  return 'ok'
 }
 
 export function FacilitiesPage({
   facilitiesData,
   selectedFacilityId,
+  onDataChanged,
   onLogout,
   onSelectedFacilityChange,
 }: FacilitiesPageProps) {
+  const [form, setForm] = useState<FacilityFormState>(emptyForm)
+  const [editingFacilityId, setEditingFacilityId] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+
   const selectedFacility =
     facilitiesData?.facilities.find((facility) => facility.id === selectedFacilityId) ??
     facilitiesData?.facilities[0] ??
     null
+
+  function updateField(field: keyof FacilityFormState, value: string) {
+    setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function resetForm() {
+    setEditingFacilityId(null)
+    setForm(emptyForm)
+    setFormError(null)
+  }
+
+  function startEdit(facility: FacilitiesData['facilities'][number]) {
+    setEditingFacilityId(facility.id)
+    setForm({
+      description: facility.description ?? '',
+      location: facility.location,
+      name: facility.name,
+      status: facility.status,
+      type: facility.type,
+    })
+    setFormError(null)
+  }
+
+  function buildPayload(): FacilityPayload {
+    return {
+      description: form.description.trim() || null,
+      location: form.location.trim(),
+      name: form.name.trim(),
+      status: form.status,
+      type: form.type.trim(),
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSaving(true)
+    setFormError(null)
+
+    try {
+      const payload = buildPayload()
+
+      if (editingFacilityId) {
+        await updateFacility(editingFacilityId, payload)
+        onSelectedFacilityChange(editingFacilityId)
+      } else {
+        await createFacility(payload)
+      }
+
+      await onDataChanged()
+      resetForm()
+    } catch (error) {
+      if (error instanceof Error) {
+        setFormError(error.message)
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  async function handleDelete(facilityId: number) {
+    if (!window.confirm('Delete this facility? Linked tools, readings, alerts, and maintenance tasks will also be removed.')) {
+      return
+    }
+
+    setFormError(null)
+
+    try {
+      await deleteFacility(facilityId)
+      await onDataChanged()
+
+      if (editingFacilityId === facilityId) {
+        resetForm()
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setFormError(error.message)
+      }
+    }
+  }
 
   return (
     <>
@@ -38,35 +155,97 @@ export function FacilitiesPage({
 
       <section className="facilities-layout">
         <article className="facilities-sidebar">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Facility list</p>
-              <h2>All facilities</h2>
+          <section className="section-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">{editingFacilityId ? 'Edit facility' : 'New facility'}</p>
+                <h2>{editingFacilityId ? 'Update facility' : 'Add facility'}</h2>
+              </div>
+              {editingFacilityId ? (
+                <button className="secondary-button" type="button" onClick={resetForm}>
+                  Cancel
+                </button>
+              ) : null}
             </div>
-          </div>
 
-          <div className="facility-selector-list">
-            {facilitiesData?.facilities.map((facility) => (
-              <button
-                key={facility.id}
-                type="button"
-                className={
-                  facility.id === selectedFacility?.id ? 'facility-selector-card active' : 'facility-selector-card'
-                }
-                onClick={() => onSelectedFacilityChange(facility.id)}
-              >
-                <div className="facility-topline">
-                  <span className="pill ok">{facility.status}</span>
-                  <span className="facility-type">{facility.type}</span>
-                </div>
-                <strong>{facility.name}</strong>
-                <span className="list-meta">{facility.location}</span>
-                <span className="list-meta">
-                  {facility.tools_count} tools • {facility.open_alerts_count} open alerts
-                </span>
+            <form className="management-form" onSubmit={handleSubmit}>
+              <label>
+                <span>Name</span>
+                <input value={form.name} onChange={(event) => updateField('name', event.target.value)} required />
+              </label>
+
+              <label>
+                <span>Type</span>
+                <input value={form.type} onChange={(event) => updateField('type', event.target.value)} required />
+              </label>
+
+              <label>
+                <span>Location</span>
+                <input
+                  value={form.location}
+                  onChange={(event) => updateField('location', event.target.value)}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
+                  <option value="active">active</option>
+                  <option value="warning">warning</option>
+                  <option value="critical">critical</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Description</span>
+                <textarea
+                  rows={4}
+                  value={form.description}
+                  onChange={(event) => updateField('description', event.target.value)}
+                />
+              </label>
+
+              {formError ? <p className="form-error">{formError}</p> : null}
+
+              <button type="submit" disabled={isSaving}>
+                {isSaving ? 'Saving...' : editingFacilityId ? 'Update facility' : 'Add facility'}
               </button>
-            ))}
-          </div>
+            </form>
+          </section>
+
+          <section className="section-panel">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">Facility list</p>
+                <h2>All facilities</h2>
+              </div>
+            </div>
+
+            <div className="facility-selector-list">
+              {facilitiesData?.facilities.map((facility) => (
+                <button
+                  key={facility.id}
+                  type="button"
+                  className={
+                    facility.id === selectedFacility?.id ? 'facility-selector-card active' : 'facility-selector-card'
+                  }
+                  onClick={() => onSelectedFacilityChange(facility.id)}
+                >
+                  <div className="facility-topline">
+                    <span className={`pill ${getStatusClass(facility.status)}`}>{facility.status}</span>
+                    <span className="facility-type">{facility.type}</span>
+                  </div>
+                  <strong>{facility.name}</strong>
+                  <span className="list-meta">{facility.location}</span>
+                  <span className="list-meta">
+                    {facility.tools_count} tools • {facility.open_alerts_count} open alerts
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
         </article>
 
         <article className="facilities-main">
@@ -78,8 +257,17 @@ export function FacilitiesPage({
                     <p className="eyebrow">Facility detail</p>
                     <h2>{selectedFacility.name}</h2>
                   </div>
-                  <span className="meta-chip">{selectedFacility.type}</span>
+                  <div className="card-actions">
+                    <button className="secondary-button" type="button" onClick={() => startEdit(selectedFacility)}>
+                      Edit
+                    </button>
+                    <button className="danger-button" type="button" onClick={() => handleDelete(selectedFacility.id)}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
+
+                <span className="meta-chip">{selectedFacility.type}</span>
 
                 <p className="lede">
                   {selectedFacility.description ?? 'No description provided for this facility yet.'}
@@ -117,7 +305,7 @@ export function FacilitiesPage({
                   {selectedFacility.automated_tools.map((tool) => (
                     <article className="facility-card" key={tool.id}>
                       <div className="facility-topline">
-                        <span className="pill ok">{tool.status}</span>
+                        <span className={`pill ${getStatusClass(tool.status)}`}>{tool.status}</span>
                         <span className="facility-type">{tool.type}</span>
                       </div>
                       <h3>{tool.name}</h3>

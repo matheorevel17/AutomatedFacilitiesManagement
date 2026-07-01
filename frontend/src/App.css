@@ -323,7 +323,8 @@
 }
 
 .management-form input,
-.management-form select {
+.management-form select,
+.management-form textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 0.85rem 0.9rem;
@@ -332,10 +333,12 @@
   background: #fff;
   color: var(--text-h);
   font: inherit;
+  resize: vertical;
 }
 
 .management-form input:focus,
-.management-form select:focus {
+.management-form select:focus,
+.management-form textarea:focus {
   outline: none;
   border-color: rgba(31, 95, 139, 0.45);
   box-shadow: 0 0 0 4px rgba(31, 95, 139, 0.08);

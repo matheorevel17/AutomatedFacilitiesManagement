@@ -163,6 +163,7 @@ function App() {
         <FacilitiesPage
           facilitiesData={facilitiesData}
           selectedFacilityId={selectedFacilityId}
+          onDataChanged={loadAppData}
           onLogout={handleLogout}
           onSelectedFacilityChange={setSelectedFacilityId}
         />

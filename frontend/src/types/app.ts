@@ -91,6 +91,14 @@ export type FacilitiesData = {
   }>
 }
 
+export type FacilityPayload = {
+  description: string | null
+  location: string
+  name: string
+  status: string
+  type: string
+}
+
 export type AlertsData = {
   alerts: Array<{
     alert_type: string

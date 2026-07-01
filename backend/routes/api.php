@@ -7,6 +7,7 @@ use App\Models\MaintenanceTask;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 Route::get('/health', function () {
@@ -158,6 +159,53 @@ Route::middleware('web')->group(function (): void {
 
             return response()->json([
                 'facilities' => $facilities,
+            ]);
+        });
+
+        Route::post('/facilities', function (Request $request) {
+            $data = $request->validate([
+                'name' => ['required', 'string', 'max:255', 'unique:facilities,name'],
+                'type' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'location' => ['required', 'string', 'max:255'],
+                'status' => ['required', 'string', Rule::in(['active', 'warning', 'critical', 'inactive'])],
+            ]);
+
+            $facility = Facility::query()->create($data);
+
+            return response()->json([
+                'message' => 'Facility created successfully.',
+                'facility' => $facility,
+            ], 201);
+        });
+
+        Route::patch('/facilities/{facility}', function (Request $request, Facility $facility) {
+            $data = $request->validate([
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('facilities', 'name')->ignore($facility->id),
+                ],
+                'type' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'location' => ['required', 'string', 'max:255'],
+                'status' => ['required', 'string', Rule::in(['active', 'warning', 'critical', 'inactive'])],
+            ]);
+
+            $facility->update($data);
+
+            return response()->json([
+                'message' => 'Facility updated successfully.',
+                'facility' => $facility,
+            ]);
+        });
+
+        Route::delete('/facilities/{facility}', function (Facility $facility) {
+            $facility->delete();
+
+            return response()->json([
+                'message' => 'Facility deleted successfully.',
             ]);
         });
 
