@@ -4,6 +4,7 @@ use App\Models\Alert;
 use App\Models\AutomatedTool;
 use App\Models\Facility;
 use App\Models\MaintenanceTask;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -344,6 +345,7 @@ Route::middleware('web')->group(function (): void {
                     'title',
                     'description',
                     'status',
+                    'priority',
                     'created_at',
                     'resolved_at',
                     'updated_at',
@@ -356,7 +358,126 @@ Route::middleware('web')->group(function (): void {
                     'in_progress' => $tasks->where('status', 'in_progress')->count(),
                     'resolved' => $tasks->where('status', 'resolved')->count(),
                 ],
+                'facilities' => Facility::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'type', 'location', 'status']),
+                'tools' => AutomatedTool::query()
+                    ->orderBy('facility_id')
+                    ->orderBy('id')
+                    ->get(['id', 'facility_id', 'name', 'type', 'location', 'status']),
+                'alerts' => Alert::query()
+                    ->latest('triggered_at')
+                    ->get(['id', 'facility_id', 'tool_id', 'alert_type', 'severity', 'status']),
+                'users' => User::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'email', 'role']),
                 'tasks' => $tasks->values(),
+            ]);
+        });
+
+        Route::post('/maintenance-tasks', function (Request $request) {
+            $data = $request->validate([
+                'alert_id' => ['nullable', 'integer', 'exists:alerts,id'],
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'title' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'assigned_to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+                'status' => ['required', 'string', Rule::in(['pending', 'in_progress', 'resolved'])],
+                'priority' => ['required', 'string', Rule::in(['low', 'medium', 'high', 'critical'])],
+            ]);
+
+            $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            if ($data['alert_id']) {
+                $alert = Alert::query()->findOrFail($data['alert_id']);
+
+                if ((int) $alert->facility_id !== (int) $data['facility_id']) {
+                    throw ValidationException::withMessages([
+                        'alert_id' => 'The selected alert must belong to the selected facility.',
+                    ]);
+                }
+            }
+
+            $data['resolved_at'] = $data['status'] === 'resolved' ? now() : null;
+
+            $task = MaintenanceTask::query()->create($data);
+
+            return response()->json([
+                'message' => 'Maintenance task created successfully.',
+                'task' => $task->load(['assignedTo:id,name', 'facility:id,name,type,location', 'tool:id,name,type,location', 'alert:id,alert_type,severity,status']),
+            ], 201);
+        });
+
+        Route::patch('/maintenance-tasks/{maintenanceTask}', function (Request $request, MaintenanceTask $maintenanceTask) {
+            $data = $request->validate([
+                'alert_id' => ['nullable', 'integer', 'exists:alerts,id'],
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'title' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'string'],
+                'assigned_to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+                'status' => ['required', 'string', Rule::in(['pending', 'in_progress', 'resolved'])],
+                'priority' => ['required', 'string', Rule::in(['low', 'medium', 'high', 'critical'])],
+            ]);
+
+            $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            if ($data['alert_id']) {
+                $alert = Alert::query()->findOrFail($data['alert_id']);
+
+                if ((int) $alert->facility_id !== (int) $data['facility_id']) {
+                    throw ValidationException::withMessages([
+                        'alert_id' => 'The selected alert must belong to the selected facility.',
+                    ]);
+                }
+            }
+
+            $data['resolved_at'] = $data['status'] === 'resolved'
+                ? ($maintenanceTask->resolved_at ?? now())
+                : null;
+
+            $maintenanceTask->update($data);
+
+            return response()->json([
+                'message' => 'Maintenance task updated successfully.',
+                'task' => $maintenanceTask->load(['assignedTo:id,name', 'facility:id,name,type,location', 'tool:id,name,type,location', 'alert:id,alert_type,severity,status']),
+            ]);
+        });
+
+        Route::patch('/maintenance-tasks/{maintenanceTask}/status', function (Request $request, MaintenanceTask $maintenanceTask) {
+            $data = $request->validate([
+                'status' => ['required', 'string', Rule::in(['pending', 'in_progress', 'resolved'])],
+            ]);
+
+            $maintenanceTask->update([
+                'status' => $data['status'],
+                'resolved_at' => $data['status'] === 'resolved' ? now() : null,
+            ]);
+
+            return response()->json([
+                'message' => 'Maintenance task status updated successfully.',
+                'task' => $maintenanceTask->load(['assignedTo:id,name', 'facility:id,name,type,location', 'tool:id,name,type,location', 'alert:id,alert_type,severity,status']),
+            ]);
+        });
+
+        Route::delete('/maintenance-tasks/{maintenanceTask}', function (MaintenanceTask $maintenanceTask) {
+            $maintenanceTask->delete();
+
+            return response()->json([
+                'message' => 'Maintenance task deleted successfully.',
             ]);
         });
     });

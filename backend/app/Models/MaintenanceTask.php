@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'description',
     'assigned_to_user_id',
     'status',
+    'priority',
     'resolved_at',
 ])]
 class MaintenanceTask extends Model

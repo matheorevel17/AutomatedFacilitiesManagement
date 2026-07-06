@@ -180,7 +180,11 @@ function App() {
       {activePage === 'alerts' ? <AlertsPage alertsData={alertsData} onLogout={handleLogout} /> : null}
 
       {activePage === 'maintenance' ? (
-        <MaintenanceTasksPage maintenanceTasksData={maintenanceTasksData} onLogout={handleLogout} />
+        <MaintenanceTasksPage
+          maintenanceTasksData={maintenanceTasksData}
+          onDataChanged={loadAppData}
+          onLogout={handleLogout}
+        />
       ) : null}
     </main>
   )

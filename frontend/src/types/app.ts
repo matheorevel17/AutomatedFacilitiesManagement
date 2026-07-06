@@ -182,6 +182,21 @@ export type AutomatedToolsData = {
 }
 
 export type MaintenanceTasksData = {
+  alerts: Array<{
+    alert_type: string
+    facility_id: number
+    id: number
+    severity: string
+    status: string
+    tool_id: number
+  }>
+  facilities: Array<{
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
+  }>
   stats: {
     in_progress: number
     pending: number
@@ -195,10 +210,12 @@ export type MaintenanceTasksData = {
       severity: string
       status: string
     } | null
+    alert_id: number | null
     assignedTo?: {
       id: number
       name: string
     } | null
+    assigned_to_user_id: number | null
     created_at: string
     description: string | null
     facility?: {
@@ -207,7 +224,9 @@ export type MaintenanceTasksData = {
       name: string
       type: string
     } | null
+    facility_id: number
     id: number
+    priority: string
     resolved_at: string | null
     status: string
     title: string
@@ -217,8 +236,34 @@ export type MaintenanceTasksData = {
       name: string
       type: string
     } | null
+    tool_id: number
     updated_at: string
   }>
+  tools: Array<{
+    facility_id: number
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
+  }>
+  users: Array<{
+    email: string
+    id: number
+    name: string
+    role: string
+  }>
+}
+
+export type MaintenanceTaskPayload = {
+  alert_id: number | null
+  assigned_to_user_id: number | null
+  description: string | null
+  facility_id: number
+  priority: string
+  status: string
+  title: string
+  tool_id: number
 }
 
 export type NavigationItem = {
