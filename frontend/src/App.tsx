@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchAlerts } from './api/alerts'
 import { fetchAutomatedTools } from './api/automatedTools'
@@ -40,33 +40,33 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
 
-  async function loadDashboard() {
+  const loadDashboard = useCallback(async function loadDashboard() {
     setDashboard(await fetchDashboard())
-  }
+  }, [])
 
-  async function loadFacilities() {
+  const loadFacilities = useCallback(async function loadFacilities() {
     const facilitiesPayload = await fetchFacilities()
     setFacilitiesData(facilitiesPayload)
     setSelectedFacilityId((current) => current ?? facilitiesPayload.facilities[0]?.id ?? null)
-  }
+  }, [])
 
-  async function loadAlerts() {
+  const loadAlerts = useCallback(async function loadAlerts() {
     setAlertsData(await fetchAlerts())
-  }
+  }, [])
 
-  async function loadAutomatedTools() {
+  const loadAutomatedTools = useCallback(async function loadAutomatedTools() {
     setAutomatedToolsData(await fetchAutomatedTools())
-  }
+  }, [])
 
-  async function loadMaintenanceTasks() {
+  const loadMaintenanceTasks = useCallback(async function loadMaintenanceTasks() {
     setMaintenanceTasksData(await fetchMaintenanceTasks())
-  }
+  }, [])
 
-  async function loadAppData() {
+  const loadAppData = useCallback(async function loadAppData() {
     await Promise.all([loadDashboard(), loadFacilities(), loadAutomatedTools(), loadAlerts(), loadMaintenanceTasks()])
-  }
+  }, [loadAlerts, loadAutomatedTools, loadDashboard, loadFacilities, loadMaintenanceTasks])
 
-  function resetAppData() {
+  const resetAppData = useCallback(function resetAppData() {
     setUser(null)
     setDashboard(null)
     setFacilitiesData(null)
@@ -75,7 +75,7 @@ function App() {
     setMaintenanceTasksData(null)
     setSelectedFacilityId(null)
     setActivePage('dashboard')
-  }
+  }, [])
 
   useEffect(() => {
     async function loadSession() {
@@ -99,7 +99,7 @@ function App() {
     }
 
     loadSession()
-  }, [])
+  }, [loadAppData, resetAppData])
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

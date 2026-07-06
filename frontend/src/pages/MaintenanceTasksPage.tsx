@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   createMaintenanceTask,
@@ -70,26 +70,19 @@ export function MaintenanceTasksPage({
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
+  const selectedFacilityId = form.facility_id || (
+    maintenanceTasksData?.facilities[0] ? String(maintenanceTasksData.facilities[0].id) : ''
+  )
+
   const toolsForFacility = maintenanceTasksData?.tools.filter(
-    (tool) => String(tool.facility_id) === form.facility_id,
+    (tool) => String(tool.facility_id) === selectedFacilityId,
   ) ?? []
+
+  const selectedToolId = form.tool_id || (toolsForFacility[0] ? String(toolsForFacility[0].id) : '')
 
   const alertsForFacility = maintenanceTasksData?.alerts.filter(
-    (alert) => String(alert.facility_id) === form.facility_id,
+    (alert) => String(alert.facility_id) === selectedFacilityId,
   ) ?? []
-
-  useEffect(() => {
-    if (!form.facility_id && maintenanceTasksData?.facilities[0]) {
-      const facilityId = String(maintenanceTasksData.facilities[0].id)
-      const firstTool = maintenanceTasksData.tools.find((tool) => String(tool.facility_id) === facilityId)
-
-      setForm((current) => ({
-        ...current,
-        facility_id: facilityId,
-        tool_id: firstTool ? String(firstTool.id) : '',
-      }))
-    }
-  }, [maintenanceTasksData, form.facility_id])
 
   function updateField(field: keyof TaskFormState, value: string) {
     setForm((current) => {
@@ -143,11 +136,11 @@ export function MaintenanceTasksPage({
       alert_id: form.alert_id ? Number(form.alert_id) : null,
       assigned_to_user_id: form.assigned_to_user_id ? Number(form.assigned_to_user_id) : null,
       description: form.description.trim() || null,
-      facility_id: Number(form.facility_id),
+      facility_id: Number(selectedFacilityId),
       priority: form.priority,
       status: form.status,
       title: form.title.trim(),
-      tool_id: Number(form.tool_id),
+      tool_id: Number(selectedToolId),
     }
   }
 
@@ -269,7 +262,7 @@ export function MaintenanceTasksPage({
             <label>
               <span>Facility</span>
               <select
-                value={form.facility_id}
+                value={selectedFacilityId}
                 onChange={(event) => updateField('facility_id', event.target.value)}
                 required
               >
@@ -284,7 +277,7 @@ export function MaintenanceTasksPage({
             <label>
               <span>Automated tool</span>
               <select
-                value={form.tool_id}
+                value={selectedToolId}
                 onChange={(event) => updateField('tool_id', event.target.value)}
                 required
               >
@@ -355,7 +348,7 @@ export function MaintenanceTasksPage({
 
             {formError ? <p className="form-error">{formError}</p> : null}
 
-            <button type="submit" disabled={isSaving || !form.tool_id}>
+            <button type="submit" disabled={isSaving || !selectedToolId}>
               {isSaving ? 'Saving...' : editingTaskId ? 'Update task' : 'Create task'}
             </button>
           </form>

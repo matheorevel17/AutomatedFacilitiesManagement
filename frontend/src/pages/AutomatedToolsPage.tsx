@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   createAutomatedTool,
@@ -43,14 +43,9 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged, onLogout
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!form.facility_id && automatedToolsData?.facilities[0]) {
-      setForm((current) => ({
-        ...current,
-        facility_id: String(automatedToolsData.facilities[0].id),
-      }))
-    }
-  }, [automatedToolsData, form.facility_id])
+  const selectedFacilityId = form.facility_id || (
+    automatedToolsData?.facilities[0] ? String(automatedToolsData.facilities[0].id) : ''
+  )
 
   function updateField(field: keyof ToolFormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -83,7 +78,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged, onLogout
 
   function buildPayload(): AutomatedToolPayload {
     return {
-      facility_id: Number(form.facility_id),
+      facility_id: Number(selectedFacilityId),
       installation_date: form.installation_date || null,
       location: form.location.trim(),
       name: form.name.trim(),
@@ -195,7 +190,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged, onLogout
             <label>
               <span>Facility</span>
               <select
-                value={form.facility_id}
+                value={selectedFacilityId}
                 onChange={(event) => updateField('facility_id', event.target.value)}
                 required
               >
