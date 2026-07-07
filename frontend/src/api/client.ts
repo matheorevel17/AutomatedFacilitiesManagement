@@ -1,4 +1,4 @@
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
+const apiUrl = window.__APP_CONFIG__?.VITE_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 let csrfToken: string | null = null
 
 function requestNeedsCsrf(method: string) {

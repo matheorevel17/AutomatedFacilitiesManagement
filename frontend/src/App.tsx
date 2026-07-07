@@ -177,7 +177,9 @@ function App() {
         />
       ) : null}
 
-      {activePage === 'alerts' ? <AlertsPage alertsData={alertsData} onLogout={handleLogout} /> : null}
+      {activePage === 'alerts' ? (
+        <AlertsPage alertsData={alertsData} onDataChanged={loadAppData} onLogout={handleLogout} />
+      ) : null}
 
       {activePage === 'maintenance' ? (
         <MaintenanceTasksPage

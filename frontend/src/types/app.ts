@@ -108,6 +108,7 @@ export type AlertsData = {
       name: string
       type: string
     } | null
+    facility_id: number
     id: number
     message: string
     severity: string
@@ -118,7 +119,15 @@ export type AlertsData = {
       name: string
       type: string
     } | null
+    tool_id: number
     triggered_at: string
+  }>
+  facilities: Array<{
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
   }>
   stats: {
     facilities_affected: number
@@ -126,6 +135,24 @@ export type AlertsData = {
     open: number
     total: number
   }
+  tools: Array<{
+    facility_id: number
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
+  }>
+}
+
+export type AlertPayload = {
+  alert_type: string
+  facility_id: number
+  message: string
+  severity: string
+  status: string
+  tool_id: number
+  triggered_at: string
 }
 
 export type AutomatedToolPayload = {
