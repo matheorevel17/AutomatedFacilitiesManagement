@@ -6,6 +6,7 @@ import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '
 import { fetchDashboard } from './api/dashboard'
 import { fetchFacilities } from './api/facilities'
 import { fetchMaintenanceTasks } from './api/maintenanceTasks'
+import { fetchSimulationData } from './api/simulation'
 import './App.css'
 import { TopNav } from './components/TopNav'
 import { AlertsPage } from './pages/AlertsPage'
@@ -14,6 +15,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { FacilitiesPage } from './pages/FacilitiesPage'
 import { LoginPage } from './pages/LoginPage'
 import { MaintenanceTasksPage } from './pages/MaintenanceTasksPage'
+import { SimulationPage } from './pages/SimulationPage'
 import { SessionLoadingPage } from './pages/SessionLoadingPage'
 import type {
   AlertsData,
@@ -23,6 +25,7 @@ import type {
   DashboardData,
   FacilitiesData,
   MaintenanceTasksData,
+  SimulationData,
 } from './types/app'
 
 function App() {
@@ -33,6 +36,7 @@ function App() {
   const [automatedToolsData, setAutomatedToolsData] = useState<AutomatedToolsData | null>(null)
   const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
   const [maintenanceTasksData, setMaintenanceTasksData] = useState<MaintenanceTasksData | null>(null)
+  const [simulationData, setSimulationData] = useState<SimulationData | null>(null)
   const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null)
   const [email, setEmail] = useState('admin@stagebali.test')
   const [password, setPassword] = useState('password')
@@ -62,9 +66,20 @@ function App() {
     setMaintenanceTasksData(await fetchMaintenanceTasks())
   }, [])
 
+  const loadSimulationData = useCallback(async function loadSimulationData() {
+    setSimulationData(await fetchSimulationData())
+  }, [])
+
   const loadAppData = useCallback(async function loadAppData() {
-    await Promise.all([loadDashboard(), loadFacilities(), loadAutomatedTools(), loadAlerts(), loadMaintenanceTasks()])
-  }, [loadAlerts, loadAutomatedTools, loadDashboard, loadFacilities, loadMaintenanceTasks])
+    await Promise.all([
+      loadDashboard(),
+      loadFacilities(),
+      loadAutomatedTools(),
+      loadSimulationData(),
+      loadAlerts(),
+      loadMaintenanceTasks(),
+    ])
+  }, [loadAlerts, loadAutomatedTools, loadDashboard, loadFacilities, loadMaintenanceTasks, loadSimulationData])
 
   const resetAppData = useCallback(function resetAppData() {
     setUser(null)
@@ -73,6 +88,7 @@ function App() {
     setAutomatedToolsData(null)
     setAlertsData(null)
     setMaintenanceTasksData(null)
+    setSimulationData(null)
     setSelectedFacilityId(null)
     setActivePage('dashboard')
   }, [])
@@ -172,6 +188,15 @@ function App() {
       {activePage === 'automated-tools' ? (
         <AutomatedToolsPage
           automatedToolsData={automatedToolsData}
+          onDataChanged={loadAppData}
+          onLogout={handleLogout}
+        />
+      ) : null}
+
+      {activePage === 'simulation' ? (
+        <SimulationPage
+          simulationData={simulationData}
+          onAlertCreated={() => setActivePage('alerts')}
           onDataChanged={loadAppData}
           onLogout={handleLogout}
         />

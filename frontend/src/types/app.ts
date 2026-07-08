@@ -1,4 +1,4 @@
-export type AppPage = 'dashboard' | 'facilities' | 'automated-tools' | 'alerts' | 'maintenance'
+export type AppPage = 'dashboard' | 'facilities' | 'automated-tools' | 'simulation' | 'alerts' | 'maintenance'
 
 export type AuthUser = {
   email: string
@@ -291,6 +291,84 @@ export type MaintenanceTaskPayload = {
   status: string
   title: string
   tool_id: number
+}
+
+export type SimulationData = {
+  facilities: Array<{
+    id: number
+    location: string
+    name: string
+    status: string
+    type: string
+  }>
+  recent_readings: Array<{
+    id: number
+    recorded_at: string
+    status: string
+    tool?: {
+      facility?: {
+        id: number
+        location: string
+        name: string
+        type: string
+      } | null
+      facility_id: number
+      id: number
+      name: string
+      type: string
+      unit: string
+    } | null
+    tool_id: number
+    unit: string
+    value: string
+  }>
+  stats: {
+    critical: number
+    normal: number
+    readings: number
+    warning: number
+  }
+  tools: Array<{
+    facility_id: number
+    id: number
+    location: string
+    name: string
+    normal_max: string
+    normal_min: string
+    status: string
+    type: string
+    unit: string
+  }>
+}
+
+export type SimulationGeneratePayload = {
+  count: number
+  facility_id: number
+  mean: number
+  normal_max: number
+  normal_min: number
+  scenario: string
+  standard_deviation: number
+  tool_id: number
+}
+
+export type SimulationDetectionPayload = {
+  facility_id: number
+  scenario: string
+  tool_id: number
+}
+
+export type SimulationActionResult = {
+  alert?: AlertsData['alerts'][number] | null
+  message: string
+  summary?: {
+    abnormal?: number
+    checked?: number
+    critical: number
+    generated?: number
+    normal?: number
+    warning?: number
+  }
 }
 
 export type NavigationItem = {
