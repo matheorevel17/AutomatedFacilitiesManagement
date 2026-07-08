@@ -7,7 +7,6 @@ type FacilitiesPageProps = {
   facilitiesData: FacilitiesData | null
   selectedFacilityId: number | null
   onDataChanged: () => Promise<void>
-  onLogout: () => void
   onSelectedFacilityChange: (facilityId: number) => void
 }
 
@@ -43,7 +42,6 @@ export function FacilitiesPage({
   facilitiesData,
   selectedFacilityId,
   onDataChanged,
-  onLogout,
   onSelectedFacilityChange,
 }: FacilitiesPageProps) {
   const [form, setForm] = useState<FacilityFormState>(emptyForm)
@@ -143,14 +141,38 @@ export function FacilitiesPage({
             <p className="eyebrow">Facilities module</p>
             <h1>Facilities overview.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           Browse each facility, inspect its automated tools, and review the most recent alerts and maintenance
           activity linked to it.
         </p>
+
+        <div className="facility-select-row">
+          <label className="facility-select-field">
+            <span>Display facility</span>
+            <select
+              value={selectedFacility?.id ?? ''}
+              onChange={(event) => {
+                const facilityId = Number(event.target.value)
+
+                if (facilityId) {
+                  onSelectedFacilityChange(facilityId)
+                }
+              }}
+              disabled={!facilitiesData?.facilities.length}
+            >
+              {facilitiesData?.facilities.length ? (
+                facilitiesData.facilities.map((facility) => (
+                  <option key={facility.id} value={facility.id}>
+                    {facility.name}
+                  </option>
+                ))
+              ) : (
+                <option value="">No facilities available</option>
+              )}
+            </select>
+          </label>
+        </div>
       </section>
 
       <section className="facilities-layout">
@@ -215,37 +237,6 @@ export function FacilitiesPage({
             </form>
           </section>
 
-          <section className="section-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Facility list</p>
-                <h2>All facilities</h2>
-              </div>
-            </div>
-
-            <div className="facility-selector-list">
-              {facilitiesData?.facilities.map((facility) => (
-                <button
-                  key={facility.id}
-                  type="button"
-                  className={
-                    facility.id === selectedFacility?.id ? 'facility-selector-card active' : 'facility-selector-card'
-                  }
-                  onClick={() => onSelectedFacilityChange(facility.id)}
-                >
-                  <div className="facility-topline">
-                    <span className={`pill ${getStatusClass(facility.status)}`}>{facility.status}</span>
-                    <span className="facility-type">{facility.type}</span>
-                  </div>
-                  <strong>{facility.name}</strong>
-                  <span className="list-meta">{facility.location}</span>
-                  <span className="list-meta">
-                    {facility.tools_count} tools • {facility.open_alerts_count} open alerts
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
         </article>
 
         <article className="facilities-main">

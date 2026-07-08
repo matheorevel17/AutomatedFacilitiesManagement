@@ -169,10 +169,10 @@ function App() {
 
   return (
     <main className="app-shell">
-      <TopNav activePage={activePage} user={user} onPageChange={setActivePage} />
+      <TopNav activePage={activePage} user={user} onLogout={handleLogout} onPageChange={setActivePage} />
 
       {activePage === 'dashboard' ? (
-        <DashboardPage dashboard={dashboard} user={user} onLogout={handleLogout} />
+        <DashboardPage dashboard={dashboard} user={user} />
       ) : null}
 
       {activePage === 'facilities' ? (
@@ -180,7 +180,6 @@ function App() {
           facilitiesData={facilitiesData}
           selectedFacilityId={selectedFacilityId}
           onDataChanged={loadAppData}
-          onLogout={handleLogout}
           onSelectedFacilityChange={setSelectedFacilityId}
         />
       ) : null}
@@ -189,7 +188,6 @@ function App() {
         <AutomatedToolsPage
           automatedToolsData={automatedToolsData}
           onDataChanged={loadAppData}
-          onLogout={handleLogout}
         />
       ) : null}
 
@@ -198,19 +196,17 @@ function App() {
           simulationData={simulationData}
           onAlertCreated={() => setActivePage('alerts')}
           onDataChanged={loadAppData}
-          onLogout={handleLogout}
         />
       ) : null}
 
       {activePage === 'alerts' ? (
-        <AlertsPage alertsData={alertsData} onDataChanged={loadAppData} onLogout={handleLogout} />
+        <AlertsPage alertsData={alertsData} onDataChanged={loadAppData} />
       ) : null}
 
       {activePage === 'maintenance' ? (
         <MaintenanceTasksPage
           maintenanceTasksData={maintenanceTasksData}
           onDataChanged={loadAppData}
-          onLogout={handleLogout}
         />
       ) : null}
     </main>

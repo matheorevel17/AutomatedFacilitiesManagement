@@ -4,10 +4,11 @@ import type { AppPage, AuthUser } from '../types/app'
 type TopNavProps = {
   activePage: AppPage
   user: AuthUser
+  onLogout: () => void
   onPageChange: (page: AppPage) => void
 }
 
-export function TopNav({ activePage, user, onPageChange }: TopNavProps) {
+export function TopNav({ activePage, user, onLogout, onPageChange }: TopNavProps) {
   return (
     <section className="topbar-panel">
       <div className="topbar-title">
@@ -27,6 +28,10 @@ export function TopNav({ activePage, user, onPageChange }: TopNavProps) {
           </button>
         ))}
       </nav>
+
+      <button className="logout-button" type="button" onClick={onLogout}>
+        Logout
+      </button>
     </section>
   )
 }

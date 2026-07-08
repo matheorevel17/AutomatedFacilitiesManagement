@@ -3,10 +3,9 @@ import type { AuthUser, DashboardData } from '../types/app'
 type DashboardPageProps = {
   dashboard: DashboardData | null
   user: AuthUser
-  onLogout: () => void
 }
 
-export function DashboardPage({ dashboard, user, onLogout }: DashboardPageProps) {
+export function DashboardPage({ dashboard, user }: DashboardPageProps) {
   return (
     <>
       <section className="hero-panel">
@@ -15,9 +14,6 @@ export function DashboardPage({ dashboard, user, onLogout }: DashboardPageProps)
             <p className="eyebrow">Operations command</p>
             <h1>Welcome back, {user.name}.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           This is the first authenticated page of the app: a monitoring overview for facilities, alerts, and

@@ -6,7 +6,6 @@ import type { AlertPayload, AlertsData } from '../types/app'
 type AlertsPageProps = {
   alertsData: AlertsData | null
   onDataChanged: () => Promise<void>
-  onLogout: () => void
 }
 
 type AlertFormState = {
@@ -78,7 +77,7 @@ function localDateTimeToApiValue(value: string) {
   return new Date(value).toISOString()
 }
 
-export function AlertsPage({ alertsData, onDataChanged, onLogout }: AlertsPageProps) {
+export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
   const [form, setForm] = useState<AlertFormState>({
     ...emptyForm,
     triggered_at: getDefaultDateTimeLocal(),
@@ -222,9 +221,6 @@ export function AlertsPage({ alertsData, onDataChanged, onLogout }: AlertsPagePr
             <p className="eyebrow">Alerts module</p>
             <h1>Alerts management.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           Create, update, resolve, and track anomalies detected across the automated facilities.

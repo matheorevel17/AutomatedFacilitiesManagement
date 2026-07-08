@@ -7,7 +7,6 @@ type SimulationPageProps = {
   simulationData: SimulationData | null
   onAlertCreated: () => void
   onDataChanged: () => Promise<void>
-  onLogout: () => void
 }
 
 type SimulationFormState = {
@@ -70,7 +69,7 @@ function loadSavedSimulationForm(): SimulationFormState {
   }
 }
 
-export function SimulationPage({ simulationData, onAlertCreated, onDataChanged, onLogout }: SimulationPageProps) {
+export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }: SimulationPageProps) {
   const [form, setForm] = useState<SimulationFormState>(() => loadSavedSimulationForm())
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDetecting, setIsDetecting] = useState(false)
@@ -221,9 +220,6 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged, 
             <p className="eyebrow">Simulation module</p>
             <h1>Generate sensor data and detect defects.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           Simulate readings for a selected automated tool, then run defect detection to create alerts from abnormal values.

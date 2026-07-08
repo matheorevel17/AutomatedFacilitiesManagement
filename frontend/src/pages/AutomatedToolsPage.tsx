@@ -10,7 +10,6 @@ import type { AutomatedToolPayload, AutomatedToolsData } from '../types/app'
 type AutomatedToolsPageProps = {
   automatedToolsData: AutomatedToolsData | null
   onDataChanged: () => Promise<void>
-  onLogout: () => void
 }
 
 type ToolFormState = {
@@ -37,7 +36,7 @@ const emptyForm: ToolFormState = {
   unit: '',
 }
 
-export function AutomatedToolsPage({ automatedToolsData, onDataChanged, onLogout }: AutomatedToolsPageProps) {
+export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
   const [editingToolId, setEditingToolId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -144,9 +143,6 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged, onLogout
             <p className="eyebrow">Automated tools module</p>
             <h1>Manage sensors and controllers.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           Add, edit, link, and monitor automated tools attached to the Water System and Air Conditioning System.

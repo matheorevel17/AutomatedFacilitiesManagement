@@ -11,7 +11,6 @@ import type { MaintenanceTaskPayload, MaintenanceTasksData } from '../types/app'
 type MaintenanceTasksPageProps = {
   maintenanceTasksData: MaintenanceTasksData | null
   onDataChanged: () => Promise<void>
-  onLogout: () => void
 }
 
 type TaskFormState = {
@@ -63,7 +62,6 @@ function getPriorityClass(priority: string) {
 export function MaintenanceTasksPage({
   maintenanceTasksData,
   onDataChanged,
-  onLogout,
 }: MaintenanceTasksPageProps) {
   const [form, setForm] = useState<TaskFormState>(emptyForm)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
@@ -211,9 +209,6 @@ export function MaintenanceTasksPage({
             <p className="eyebrow">Maintenance module</p>
             <h1>Maintenance tasks overview.</h1>
           </div>
-          <button className="logout-button" type="button" onClick={onLogout}>
-            Logout
-          </button>
         </div>
         <p className="lede">
           Create interventions after alerts, assign technicians, update status, and close completed maintenance work.

@@ -41,6 +41,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
+  justify-content: center;
+  flex: 1;
 }
 
 .nav-link {
@@ -165,8 +167,16 @@
   background: #9a2f16;
 }
 
+.logout-button {
+  background: #b42318;
+}
+
 .danger-button:hover {
   background: #7d2612;
+}
+
+.logout-button:hover {
+  background: #8f1d14;
 }
 
 .form-error {
@@ -251,38 +261,38 @@
   gap: 1rem;
 }
 
-.facility-selector-list {
-  display: grid;
-  gap: 0.75rem;
+.facility-select-row {
+  margin-top: 1.5rem;
+  max-width: 26rem;
 }
 
-.facility-selector-card {
-  text-align: left;
+.facility-select-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.facility-select-field span {
+  color: var(--text-h);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.facility-select-field select {
+  width: 100%;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--card);
-  padding: 1rem;
-  cursor: pointer;
-  transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
-}
-
-.facility-selector-card:hover {
-  border-color: rgba(31, 95, 139, 0.3);
-  box-shadow: 0 12px 28px rgba(26, 44, 64, 0.08);
-}
-
-.facility-selector-card.active {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(31, 95, 139, 0.1);
-}
-
-.facility-selector-card strong {
-  display: block;
-  margin-bottom: 0.3rem;
+  background: #fff;
   color: var(--text-h);
+  font: inherit;
+  padding: 0.85rem 0.95rem;
+}
+
+.facility-select-field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(31, 95, 139, 0.12);
+  outline: none;
 }
 
 .alerts-grid {
