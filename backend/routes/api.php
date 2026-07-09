@@ -4,6 +4,7 @@ use App\Models\Alert;
 use App\Models\AutomatedTool;
 use App\Models\Facility;
 use App\Models\MaintenanceTask;
+use App\Models\SensorReading;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -320,10 +321,290 @@ Route::middleware('web')->group(function (): void {
                 'stats' => [
                     'total' => $alerts->count(),
                     'open' => $alerts->where('status', 'open')->count(),
-                    'high_severity' => $alerts->where('severity', 'high')->count(),
+                    'high_severity' => $alerts->whereIn('severity', ['high', 'critical'])->count(),
                     'facilities_affected' => $alerts->pluck('facility_id')->unique()->count(),
                 ],
+                'facilities' => Facility::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'type', 'location', 'status']),
+                'tools' => AutomatedTool::query()
+                    ->orderBy('facility_id')
+                    ->orderBy('id')
+                    ->get(['id', 'facility_id', 'name', 'type', 'location', 'status']),
                 'alerts' => $alerts->values(),
+            ]);
+        });
+
+        Route::post('/alerts', function (Request $request) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'triggered_at' => ['required', 'date'],
+                'alert_type' => ['required', 'string', 'max:255'],
+                'severity' => ['required', 'string', Rule::in(['low', 'medium', 'high', 'critical'])],
+                'message' => ['required', 'string'],
+                'status' => ['required', 'string', Rule::in(['open', 'in_progress', 'resolved'])],
+            ]);
+
+            $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            $alert = Alert::query()->create($data);
+
+            return response()->json([
+                'message' => 'Alert created successfully.',
+                'alert' => $alert->load(['facility:id,name,type,location', 'tool:id,name,type,location']),
+            ], 201);
+        });
+
+        Route::patch('/alerts/{alert}', function (Request $request, Alert $alert) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'triggered_at' => ['required', 'date'],
+                'alert_type' => ['required', 'string', 'max:255'],
+                'severity' => ['required', 'string', Rule::in(['low', 'medium', 'high', 'critical'])],
+                'message' => ['required', 'string'],
+                'status' => ['required', 'string', Rule::in(['open', 'in_progress', 'resolved'])],
+            ]);
+
+            $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            $alert->update($data);
+
+            return response()->json([
+                'message' => 'Alert updated successfully.',
+                'alert' => $alert->load(['facility:id,name,type,location', 'tool:id,name,type,location']),
+            ]);
+        });
+
+        Route::patch('/alerts/{alert}/status', function (Request $request, Alert $alert) {
+            $data = $request->validate([
+                'status' => ['required', 'string', Rule::in(['open', 'in_progress', 'resolved'])],
+            ]);
+
+            $alert->update([
+                'status' => $data['status'],
+            ]);
+
+            return response()->json([
+                'message' => 'Alert status updated successfully.',
+                'alert' => $alert->load(['facility:id,name,type,location', 'tool:id,name,type,location']),
+            ]);
+        });
+
+        Route::delete('/alerts/{alert}', function (Alert $alert) {
+            $alert->delete();
+
+            return response()->json([
+                'message' => 'Alert deleted successfully.',
+            ]);
+        });
+
+        Route::get('/simulation', function () {
+            $readings = SensorReading::query()
+                ->with([
+                    'tool:id,facility_id,name,type,unit',
+                    'tool.facility:id,name,type,location',
+                ])
+                ->latest('recorded_at')
+                ->limit(60)
+                ->get([
+                    'id',
+                    'tool_id',
+                    'recorded_at',
+                    'value',
+                    'unit',
+                    'status',
+                ]);
+
+            return response()->json([
+                'facilities' => Facility::query()
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'type', 'location', 'status']),
+                'tools' => AutomatedTool::query()
+                    ->orderBy('facility_id')
+                    ->orderBy('id')
+                    ->get([
+                        'id',
+                        'facility_id',
+                        'name',
+                        'type',
+                        'location',
+                        'normal_min',
+                        'normal_max',
+                        'unit',
+                        'status',
+                    ]),
+                'recent_readings' => $readings,
+                'stats' => [
+                    'readings' => SensorReading::query()->count(),
+                    'normal' => SensorReading::query()->where('status', 'normal')->count(),
+                    'warning' => SensorReading::query()->where('status', 'warning')->count(),
+                    'critical' => SensorReading::query()->where('status', 'critical')->count(),
+                ],
+            ]);
+        });
+
+        Route::post('/simulation/generate', function (Request $request) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'count' => ['required', 'integer', 'min:1', 'max:200'],
+                'mean' => ['required', 'numeric'],
+                'standard_deviation' => ['required', 'numeric', 'min:0'],
+                'normal_min' => ['required', 'numeric'],
+                'normal_max' => ['required', 'numeric', 'gte:normal_min'],
+                'scenario' => ['required', 'string', Rule::in([
+                    'normal_operation',
+                    'possible_water_leak',
+                    'poor_cooling_performance',
+                    'pollution_detected',
+                ])],
+            ]);
+
+            $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            $standardDeviation = max((float) $data['standard_deviation'], 0.01);
+            $normalMin = (float) $data['normal_min'];
+            $normalMax = (float) $data['normal_max'];
+            $range = max($normalMax - $normalMin, 1);
+            $baseTime = now()->subMinutes((int) $data['count'] * 5);
+            $readings = collect();
+
+            SensorReading::query()
+                ->where('tool_id', $tool->id)
+                ->delete();
+
+            for ($index = 0; $index < (int) $data['count']; $index++) {
+                $mean = (float) $data['mean'];
+
+                if ($data['scenario'] === 'possible_water_leak' && $index > $data['count'] * 0.45) {
+                    $mean = $normalMin - ($range * 0.25);
+                }
+
+                if (in_array($data['scenario'], ['poor_cooling_performance', 'pollution_detected'], true) && $index > $data['count'] * 0.45) {
+                    $mean = $normalMax + ($range * 0.25);
+                }
+
+                $value = $mean + ($standardDeviation * sqrt(-2 * log(max(mt_rand() / mt_getrandmax(), 0.0001))) * cos(2 * pi() * mt_rand() / mt_getrandmax()));
+                $value = round($value, 2);
+                $status = 'normal';
+
+                if ($value < $normalMin || $value > $normalMax) {
+                    $distance = $value < $normalMin ? $normalMin - $value : $value - $normalMax;
+                    $status = $distance > ($range * 0.2) ? 'critical' : 'warning';
+                }
+
+                $readings->push(SensorReading::query()->create([
+                    'tool_id' => $tool->id,
+                    'recorded_at' => $baseTime->copy()->addMinutes($index * 5),
+                    'value' => $value,
+                    'unit' => $tool->unit,
+                    'status' => $status,
+                ]));
+            }
+
+            return response()->json([
+                'message' => 'Simulated data generated successfully.',
+                'summary' => [
+                    'generated' => $readings->count(),
+                    'normal' => $readings->where('status', 'normal')->count(),
+                    'warning' => $readings->where('status', 'warning')->count(),
+                    'critical' => $readings->where('status', 'critical')->count(),
+                ],
+                'readings' => $readings->values(),
+            ], 201);
+        });
+
+        Route::post('/simulation/detect', function (Request $request) {
+            $data = $request->validate([
+                'facility_id' => ['required', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'scenario' => ['required', 'string', Rule::in([
+                    'normal_operation',
+                    'possible_water_leak',
+                    'poor_cooling_performance',
+                    'pollution_detected',
+                ])],
+            ]);
+
+            $tool = AutomatedTool::query()->with('facility:id,name')->findOrFail($data['tool_id']);
+
+            if ((int) $tool->facility_id !== (int) $data['facility_id']) {
+                throw ValidationException::withMessages([
+                    'tool_id' => 'The selected tool must belong to the selected facility.',
+                ]);
+            }
+
+            $readings = SensorReading::query()
+                ->where('tool_id', $tool->id)
+                ->latest('recorded_at')
+                ->limit(30)
+                ->get();
+
+            $abnormalReadings = $readings->whereIn('status', ['warning', 'critical']);
+
+            if ($abnormalReadings->isEmpty()) {
+                return response()->json([
+                    'message' => 'No defect detected in the latest sensor readings.',
+                    'alert' => null,
+                    'summary' => [
+                        'checked' => $readings->count(),
+                        'abnormal' => 0,
+                        'critical' => 0,
+                    ],
+                ]);
+            }
+
+            $criticalCount = $abnormalReadings->where('status', 'critical')->count();
+            $severity = $criticalCount > 0 ? 'high' : 'medium';
+            $alertType = match ($data['scenario']) {
+                'possible_water_leak' => 'possible_water_leak',
+                'poor_cooling_performance' => 'poor_cooling_performance',
+                'pollution_detected' => 'pollution_detected',
+                default => 'abnormal_sensor_values',
+            };
+
+            $alert = Alert::query()->updateOrCreate(
+                [
+                    'facility_id' => $tool->facility_id,
+                    'tool_id' => $tool->id,
+                    'alert_type' => $alertType,
+                    'status' => 'open',
+                ],
+                [
+                    'triggered_at' => $abnormalReadings->sortByDesc('recorded_at')->first()->recorded_at,
+                    'severity' => $severity,
+                    'message' => "{$abnormalReadings->count()} abnormal readings detected for {$tool->name}.",
+                ],
+            );
+
+            return response()->json([
+                'message' => 'Defect detected and alert created.',
+                'alert' => $alert->load(['facility:id,name,type,location', 'tool:id,name,type,location']),
+                'summary' => [
+                    'checked' => $readings->count(),
+                    'abnormal' => $abnormalReadings->count(),
+                    'critical' => $criticalCount,
+                ],
             ]);
         });
 
