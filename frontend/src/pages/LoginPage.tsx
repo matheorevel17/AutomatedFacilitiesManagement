@@ -22,11 +22,7 @@ export function LoginPage({
   return (
     <main className="app-shell">
       <section className="auth-panel">
-        <p className="eyebrow">StageBali access</p>
-        <h1>Log in to the monitoring platform.</h1>
-        <p className="lede">
-          This first page uses a Laravel session cookie stored by the browser after a successful login.
-        </p>
+        <h1>Login</h1>
 
         <form className="login-form" onSubmit={onSubmit}>
           <label>
@@ -55,10 +51,6 @@ export function LoginPage({
             {isSubmitting ? 'Signing in...' : 'Login'}
           </button>
         </form>
-
-        <p className="dev-hint">
-          Dev account: <code>admin@stagebali.test</code> / <code>password</code>
-        </p>
       </section>
     </main>
   )

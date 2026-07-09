@@ -24,6 +24,12 @@
   padding: 2rem;
 }
 
+.auth-panel {
+  align-self: center;
+  width: min(100%, 28rem);
+  text-align: center;
+}
+
 .topbar-panel {
   display: flex;
   align-items: center;
@@ -76,7 +82,8 @@
   display: grid;
   gap: 0.9rem;
   max-width: 24rem;
-  margin-top: 1.5rem;
+  margin: 1.5rem auto 0;
+  text-align: left;
 }
 
 .login-form label {
