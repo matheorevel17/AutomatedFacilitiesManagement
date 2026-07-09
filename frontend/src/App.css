@@ -373,6 +373,37 @@
   gap: 0.9rem;
 }
 
+.list-filter {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 20rem;
+  margin-bottom: 1rem;
+}
+
+.list-filter span {
+  color: var(--text-h);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.list-filter select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-h);
+  font: inherit;
+  padding: 0.8rem 0.9rem;
+}
+
+.list-filter select:focus {
+  border-color: rgba(31, 95, 139, 0.45);
+  box-shadow: 0 0 0 4px rgba(31, 95, 139, 0.08);
+  outline: none;
+}
+
 .tool-management-card {
   display: flex;
   flex-direction: column;

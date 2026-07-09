@@ -38,12 +38,19 @@ const emptyForm: ToolFormState = {
 
 export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
+  const [facilityFilterId, setFacilityFilterId] = useState('all')
   const [editingToolId, setEditingToolId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
   const selectedFacilityId = form.facility_id || (
     automatedToolsData?.facilities[0] ? String(automatedToolsData.facilities[0].id) : ''
+  )
+  const filteredTools = automatedToolsData?.tools.filter((tool) => (
+    facilityFilterId === 'all' || String(tool.facility_id) === facilityFilterId
+  )) ?? []
+  const selectedFilterFacility = automatedToolsData?.facilities.find(
+    (facility) => String(facility.id) === facilityFilterId,
   )
 
   function updateField(field: keyof ToolFormState, value: string) {
@@ -278,13 +285,25 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
           <div className="section-head">
             <div>
               <p className="eyebrow">Tool inventory</p>
-              <h2>All automated tools</h2>
+              <h2>{selectedFilterFacility ? `${selectedFilterFacility.name} tools` : 'All automated tools'}</h2>
             </div>
           </div>
 
+          <label className="list-filter">
+            <span>Display</span>
+            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+              <option value="all">All facilities</option>
+              {automatedToolsData?.facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="tool-list">
-            {automatedToolsData?.tools.length ? (
-              automatedToolsData.tools.map((tool) => (
+            {filteredTools.length ? (
+              filteredTools.map((tool) => (
                 <article className="list-card tool-management-card" key={tool.id}>
                   <div className="list-row">
                     <span className={`pill ${tool.status === 'active' ? 'ok' : 'pending'}`}>{tool.status}</span>
@@ -319,7 +338,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
                 </article>
               ))
             ) : (
-              <p className="empty-state">No automated tools available yet.</p>
+              <p className="empty-state">No automated tools match this facility filter.</p>
             )}
           </div>
         </article>

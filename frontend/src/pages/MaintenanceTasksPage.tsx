@@ -64,6 +64,7 @@ export function MaintenanceTasksPage({
   onDataChanged,
 }: MaintenanceTasksPageProps) {
   const [form, setForm] = useState<TaskFormState>(emptyForm)
+  const [facilityFilterId, setFacilityFilterId] = useState('all')
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -81,6 +82,12 @@ export function MaintenanceTasksPage({
   const alertsForFacility = maintenanceTasksData?.alerts.filter(
     (alert) => String(alert.facility_id) === selectedFacilityId,
   ) ?? []
+  const filteredTasks = maintenanceTasksData?.tasks.filter((task) => (
+    facilityFilterId === 'all' || String(task.facility_id) === facilityFilterId
+  )) ?? []
+  const selectedFilterFacility = maintenanceTasksData?.facilities.find(
+    (facility) => String(facility.id) === facilityFilterId,
+  )
 
   function updateField(field: keyof TaskFormState, value: string) {
     setForm((current) => {
@@ -353,13 +360,25 @@ export function MaintenanceTasksPage({
           <div className="section-head">
             <div>
               <p className="eyebrow">Task tracking</p>
-              <h2>All maintenance tasks</h2>
+              <h2>{selectedFilterFacility ? `${selectedFilterFacility.name} maintenance tasks` : 'All maintenance tasks'}</h2>
             </div>
           </div>
 
+          <label className="list-filter">
+            <span>Display</span>
+            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+              <option value="all">All facilities</option>
+              {maintenanceTasksData?.facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="maintenance-grid">
-            {maintenanceTasksData?.tasks.length ? (
-              maintenanceTasksData.tasks.map((task) => (
+            {filteredTasks.length ? (
+              filteredTasks.map((task) => (
                 <article className="list-card tool-management-card" key={task.id}>
                   <div className="list-row">
                     <span className={`pill ${getStatusClass(task.status)}`}>{task.status}</span>
@@ -404,7 +423,7 @@ export function MaintenanceTasksPage({
                 </article>
               ))
             ) : (
-              <p className="empty-state">No maintenance tasks recorded yet.</p>
+              <p className="empty-state">No maintenance tasks match this facility filter.</p>
             )}
           </div>
         </article>

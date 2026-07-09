@@ -82,6 +82,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
     ...emptyForm,
     triggered_at: getDefaultDateTimeLocal(),
   })
+  const [facilityFilterId, setFacilityFilterId] = useState('all')
   const [editingAlertId, setEditingAlertId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -95,6 +96,12 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
   ) ?? []
 
   const selectedToolId = form.tool_id || (toolsForFacility[0] ? String(toolsForFacility[0].id) : '')
+  const filteredAlerts = alertsData?.alerts.filter((alert) => (
+    facilityFilterId === 'all' || String(alert.facility_id) === facilityFilterId
+  )) ?? []
+  const selectedFilterFacility = alertsData?.facilities.find(
+    (facility) => String(facility.id) === facilityFilterId,
+  )
 
   function updateField(field: keyof AlertFormState, value: string) {
     setForm((current) => {
@@ -354,13 +361,25 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
           <div className="section-head">
             <div>
               <p className="eyebrow">Detected issues</p>
-              <h2>All current alerts</h2>
+              <h2>{selectedFilterFacility ? `${selectedFilterFacility.name} alerts` : 'All current alerts'}</h2>
             </div>
           </div>
 
+          <label className="list-filter">
+            <span>Display</span>
+            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+              <option value="all">All facilities</option>
+              {alertsData?.facilities.map((facility) => (
+                <option key={facility.id} value={facility.id}>
+                  {facility.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <div className="alerts-grid">
-            {alertsData?.alerts.length ? (
-              alertsData.alerts.map((alert) => (
+            {filteredAlerts.length ? (
+              filteredAlerts.map((alert) => (
                 <article className="list-card tool-management-card" key={alert.id}>
                   <div className="list-row">
                     <span className={`pill ${getSeverityClass(alert.severity)}`}>{alert.severity}</span>
@@ -398,7 +417,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
                 </article>
               ))
             ) : (
-              <p className="empty-state">No alerts recorded yet.</p>
+              <p className="empty-state">No alerts match this facility filter.</p>
             )}
           </div>
         </article>
