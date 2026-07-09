@@ -12,7 +12,6 @@ export function TopNav({ activePage, user, onLogout, onPageChange }: TopNavProps
   return (
     <section className="topbar-panel">
       <div className="topbar-title">
-        <p className="eyebrow">StageBali platform</p>
         <strong>{user.name}</strong>
       </div>
 

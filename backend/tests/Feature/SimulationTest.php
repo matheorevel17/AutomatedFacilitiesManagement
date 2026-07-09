@@ -86,4 +86,52 @@ class SimulationTest extends TestCase
 
         $this->assertSame(1, Alert::query()->count());
     }
+
+    public function test_user_can_detect_air_conditioning_scenario(): void
+    {
+        $user = User::factory()->create();
+        $facility = Facility::query()->create([
+            'name' => 'Air Conditioning System',
+            'type' => 'air_conditioning',
+            'description' => 'Test facility',
+            'location' => 'Test zone',
+            'status' => 'active',
+        ]);
+        $tool = AutomatedTool::query()->create([
+            'facility_id' => $facility->id,
+            'name' => 'Humidity Sensor',
+            'type' => 'humidity_sensor',
+            'location' => 'Main room',
+            'normal_min' => 40.00,
+            'normal_max' => 60.00,
+            'unit' => '%',
+            'status' => 'active',
+            'installation_date' => now()->toDateString(),
+        ]);
+
+        $this
+            ->actingAs($user)
+            ->postJson('/api/simulation/generate', [
+                'facility_id' => $facility->id,
+                'tool_id' => $tool->id,
+                'count' => 12,
+                'mean' => 50.00,
+                'standard_deviation' => 0.05,
+                'normal_min' => 40.00,
+                'normal_max' => 60.00,
+                'scenario' => 'high_humidity_level',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('summary.generated', 12);
+
+        $this
+            ->actingAs($user)
+            ->postJson('/api/simulation/detect', [
+                'facility_id' => $facility->id,
+                'tool_id' => $tool->id,
+                'scenario' => 'high_humidity_level',
+            ])
+            ->assertOk()
+            ->assertJsonPath('alert.alert_type', 'high_humidity_level');
+    }
 }

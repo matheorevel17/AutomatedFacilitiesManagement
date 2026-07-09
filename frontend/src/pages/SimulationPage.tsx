@@ -20,6 +20,13 @@ type SimulationFormState = {
   tool_id: string
 }
 
+type ScenarioOption = {
+  label: string
+  value: string
+}
+
+type SimulationFacility = NonNullable<SimulationData>['facilities'][number]
+
 const emptyForm: SimulationFormState = {
   count: '20',
   facility_id: '',
@@ -33,11 +40,37 @@ const emptyForm: SimulationFormState = {
 
 const simulationFormStorageKey = 'stagebali.simulation.form'
 
-const scenarioLabels: Record<string, string> = {
-  normal_operation: 'Normal operation',
-  possible_water_leak: 'Possible water leak',
-  poor_cooling_performance: 'Poor cooling performance',
-  pollution_detected: 'Pollution detected',
+const waterScenarioOptions: ScenarioOption[] = [
+  { label: 'Normal operation', value: 'normal_operation' },
+  { label: 'Possible water leak', value: 'possible_water_leak' },
+  { label: 'Low water level', value: 'low_water_level' },
+  { label: 'Water pollution detected', value: 'water_pollution_detected' },
+]
+
+const airScenarioOptions: ScenarioOption[] = [
+  { label: 'Normal operation', value: 'normal_operation' },
+  { label: 'Poor cooling performance', value: 'poor_cooling_performance' },
+  { label: 'High humidity level', value: 'high_humidity_level' },
+  { label: 'Poor air quality', value: 'poor_air_quality' },
+]
+
+const genericScenarioOptions: ScenarioOption[] = [
+  { label: 'Normal operation', value: 'normal_operation' },
+  { label: 'Abnormal sensor values', value: 'abnormal_sensor_values' },
+]
+
+function getScenarioOptions(facility: SimulationFacility | null): ScenarioOption[] {
+  const facilityText = `${facility?.name ?? ''} ${facility?.type ?? ''}`.toLowerCase()
+
+  if (facilityText.includes('water')) {
+    return waterScenarioOptions
+  }
+
+  if (facilityText.includes('air') || facilityText.includes('conditioning')) {
+    return airScenarioOptions
+  }
+
+  return genericScenarioOptions
 }
 
 function getStatusClass(status: string) {
@@ -79,6 +112,13 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
   const selectedFacilityId = form.facility_id || (
     simulationData?.facilities[0] ? String(simulationData.facilities[0].id) : ''
   )
+  const selectedFacility = simulationData?.facilities.find(
+    (facility) => String(facility.id) === selectedFacilityId,
+  ) ?? null
+  const scenarioOptions = getScenarioOptions(selectedFacility)
+  const selectedScenario = scenarioOptions.some((option) => option.value === form.scenario)
+    ? form.scenario
+    : scenarioOptions[0].value
 
   const toolsForFacility = simulationData?.tools.filter(
     (tool) => String(tool.facility_id) === selectedFacilityId,
@@ -103,6 +143,7 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
     setForm((current) => {
       if (field === 'facility_id') {
         const firstTool = simulationData?.tools.find((tool) => String(tool.facility_id) === value)
+        const facility = simulationData?.facilities.find((candidate) => String(candidate.id) === value) ?? null
 
         return {
           ...current,
@@ -110,6 +151,7 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
           mean: firstTool ? String(((Number(firstTool.normal_min) + Number(firstTool.normal_max)) / 2).toFixed(2)) : '',
           normal_max: firstTool?.normal_max ?? '',
           normal_min: firstTool?.normal_min ?? '',
+          scenario: getScenarioOptions(facility)[0].value,
           tool_id: firstTool ? String(firstTool.id) : '',
         }
       }
@@ -146,7 +188,7 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
       mean: Number(mean),
       normal_max: Number(normalMax),
       normal_min: Number(normalMin),
-      scenario: form.scenario,
+      scenario: selectedScenario,
       standard_deviation: Number(form.standard_deviation),
       tool_id: Number(selectedToolId),
     }
@@ -194,7 +236,7 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
     try {
       const response = await runDefectDetection({
         facility_id: Number(selectedFacilityId),
-        scenario: form.scenario,
+        scenario: selectedScenario,
         tool_id: Number(selectedToolId),
       })
       setResult(response)
@@ -287,10 +329,10 @@ export function SimulationPage({ simulationData, onAlertCreated, onDataChanged }
 
             <label>
               <span>Scenario</span>
-              <select value={form.scenario} onChange={(event) => updateField('scenario', event.target.value)}>
-                {Object.entries(scenarioLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
+              <select value={selectedScenario} onChange={(event) => updateField('scenario', event.target.value)}>
+                {scenarioOptions.map((scenario) => (
+                  <option key={scenario.value} value={scenario.value}>
+                    {scenario.label}
                   </option>
                 ))}
               </select>

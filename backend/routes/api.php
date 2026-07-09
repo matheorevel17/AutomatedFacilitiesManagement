@@ -469,8 +469,13 @@ Route::middleware('web')->group(function (): void {
                 'scenario' => ['required', 'string', Rule::in([
                     'normal_operation',
                     'possible_water_leak',
+                    'low_water_level',
+                    'water_pollution_detected',
                     'poor_cooling_performance',
+                    'high_humidity_level',
+                    'poor_air_quality',
                     'pollution_detected',
+                    'abnormal_sensor_values',
                 ])],
             ]);
 
@@ -496,11 +501,18 @@ Route::middleware('web')->group(function (): void {
             for ($index = 0; $index < (int) $data['count']; $index++) {
                 $mean = (float) $data['mean'];
 
-                if ($data['scenario'] === 'possible_water_leak' && $index > $data['count'] * 0.45) {
+                if (in_array($data['scenario'], ['possible_water_leak', 'low_water_level'], true) && $index > $data['count'] * 0.45) {
                     $mean = $normalMin - ($range * 0.25);
                 }
 
-                if (in_array($data['scenario'], ['poor_cooling_performance', 'pollution_detected'], true) && $index > $data['count'] * 0.45) {
+                if (in_array($data['scenario'], [
+                    'water_pollution_detected',
+                    'poor_cooling_performance',
+                    'high_humidity_level',
+                    'poor_air_quality',
+                    'pollution_detected',
+                    'abnormal_sensor_values',
+                ], true) && $index > $data['count'] * 0.45) {
                     $mean = $normalMax + ($range * 0.25);
                 }
 
@@ -541,8 +553,13 @@ Route::middleware('web')->group(function (): void {
                 'scenario' => ['required', 'string', Rule::in([
                     'normal_operation',
                     'possible_water_leak',
+                    'low_water_level',
+                    'water_pollution_detected',
                     'poor_cooling_performance',
+                    'high_humidity_level',
+                    'poor_air_quality',
                     'pollution_detected',
+                    'abnormal_sensor_values',
                 ])],
             ]);
 
@@ -578,7 +595,11 @@ Route::middleware('web')->group(function (): void {
             $severity = $criticalCount > 0 ? 'high' : 'medium';
             $alertType = match ($data['scenario']) {
                 'possible_water_leak' => 'possible_water_leak',
+                'low_water_level' => 'low_water_level',
+                'water_pollution_detected' => 'water_pollution_detected',
                 'poor_cooling_performance' => 'poor_cooling_performance',
+                'high_humidity_level' => 'high_humidity_level',
+                'poor_air_quality' => 'poor_air_quality',
                 'pollution_detected' => 'pollution_detected',
                 default => 'abnormal_sensor_values',
             };
