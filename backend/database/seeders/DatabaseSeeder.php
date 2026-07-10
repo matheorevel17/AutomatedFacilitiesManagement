@@ -356,10 +356,20 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
-        if (User::query()->count() < 5) {
-            User::factory(3)->create([
-                'role' => 'technician',
-            ]);
+        foreach ([
+            ['email' => 'operator@stagebali.test', 'name' => 'Facility Operator', 'role' => 'manager'],
+            ['email' => 'water.tech@stagebali.test', 'name' => 'Water Technician', 'role' => 'technician'],
+            ['email' => 'air.tech@stagebali.test', 'name' => 'Air Conditioning Technician', 'role' => 'technician'],
+        ] as $user) {
+            User::query()->firstOrCreate(
+                ['email' => $user['email']],
+                [
+                    'name' => $user['name'],
+                    'password' => 'password',
+                    'role' => $user['role'],
+                    'email_verified_at' => now(),
+                ],
+            );
         }
     }
 }
