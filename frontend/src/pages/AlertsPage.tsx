@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { createAlert, deleteAlert, updateAlert, updateAlertStatus } from '../api/alerts'
+import { Pagination } from '../components/Pagination'
 import type { AlertPayload, AlertsData } from '../types/app'
 
 type AlertsPageProps = {
@@ -27,6 +28,8 @@ const emptyForm: AlertFormState = {
   tool_id: '',
   triggered_at: '',
 }
+
+const itemsPerPage = 8
 
 function getSeverityClass(severity: string) {
   if (severity === 'critical' || severity === 'high') {
@@ -83,6 +86,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
     triggered_at: getDefaultDateTimeLocal(),
   })
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [editingAlertId, setEditingAlertId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -101,6 +105,12 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
   )) ?? []
   const selectedFilterFacility = alertsData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
+  )
+  const totalPages = Math.max(1, Math.ceil(filteredAlerts.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedAlerts = filteredAlerts.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage,
   )
 
   function updateField(field: keyof AlertFormState, value: string) {
@@ -367,7 +377,13 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
 
           <label className="list-filter">
             <span>Display</span>
-            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+            <select
+              value={facilityFilterId}
+              onChange={(event) => {
+                setFacilityFilterId(event.target.value)
+                setCurrentPage(1)
+              }}
+            >
               <option value="all">All facilities</option>
               {alertsData?.facilities.map((facility) => (
                 <option key={facility.id} value={facility.id}>
@@ -378,8 +394,8 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
           </label>
 
           <div className="alerts-grid">
-            {filteredAlerts.length ? (
-              filteredAlerts.map((alert) => (
+            {paginatedAlerts.length ? (
+              paginatedAlerts.map((alert) => (
                 <article className="list-card tool-management-card" key={alert.id}>
                   <div className="list-row">
                     <span className={`pill ${getSeverityClass(alert.severity)}`}>{alert.severity}</span>
@@ -420,6 +436,13 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
               <p className="empty-state">No alerts match this facility filter.</p>
             )}
           </div>
+
+          <Pagination
+            currentPage={safeCurrentPage}
+            onPageChange={setCurrentPage}
+            pageSize={itemsPerPage}
+            totalItems={filteredAlerts.length}
+          />
         </article>
       </section>
     </>

@@ -5,6 +5,7 @@ import {
   deleteAutomatedTool,
   updateAutomatedTool,
 } from '../api/automatedTools'
+import { Pagination } from '../components/Pagination'
 import type { AutomatedToolPayload, AutomatedToolsData } from '../types/app'
 
 type AutomatedToolsPageProps = {
@@ -36,9 +37,12 @@ const emptyForm: ToolFormState = {
   unit: '',
 }
 
+const itemsPerPage = 8
+
 export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [editingToolId, setEditingToolId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -51,6 +55,12 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
   )) ?? []
   const selectedFilterFacility = automatedToolsData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
+  )
+  const totalPages = Math.max(1, Math.ceil(filteredTools.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedTools = filteredTools.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage,
   )
 
   function updateField(field: keyof ToolFormState, value: string) {
@@ -291,7 +301,13 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
 
           <label className="list-filter">
             <span>Display</span>
-            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+            <select
+              value={facilityFilterId}
+              onChange={(event) => {
+                setFacilityFilterId(event.target.value)
+                setCurrentPage(1)
+              }}
+            >
               <option value="all">All facilities</option>
               {automatedToolsData?.facilities.map((facility) => (
                 <option key={facility.id} value={facility.id}>
@@ -302,8 +318,8 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
           </label>
 
           <div className="tool-list">
-            {filteredTools.length ? (
-              filteredTools.map((tool) => (
+            {paginatedTools.length ? (
+              paginatedTools.map((tool) => (
                 <article className="list-card tool-management-card" key={tool.id}>
                   <div className="list-row">
                     <span className={`pill ${tool.status === 'active' ? 'ok' : 'pending'}`}>{tool.status}</span>
@@ -341,6 +357,13 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
               <p className="empty-state">No automated tools match this facility filter.</p>
             )}
           </div>
+
+          <Pagination
+            currentPage={safeCurrentPage}
+            onPageChange={setCurrentPage}
+            pageSize={itemsPerPage}
+            totalItems={filteredTools.length}
+          />
         </article>
       </section>
     </>

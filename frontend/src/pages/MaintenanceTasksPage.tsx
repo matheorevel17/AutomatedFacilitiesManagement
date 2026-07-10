@@ -6,6 +6,7 @@ import {
   updateMaintenanceTask,
   updateMaintenanceTaskStatus,
 } from '../api/maintenanceTasks'
+import { Pagination } from '../components/Pagination'
 import type { MaintenanceTaskPayload, MaintenanceTasksData } from '../types/app'
 
 type MaintenanceTasksPageProps = {
@@ -34,6 +35,8 @@ const emptyForm: TaskFormState = {
   title: '',
   tool_id: '',
 }
+
+const itemsPerPage = 8
 
 function getStatusClass(status: string) {
   if (status === 'resolved') {
@@ -65,6 +68,7 @@ export function MaintenanceTasksPage({
 }: MaintenanceTasksPageProps) {
   const [form, setForm] = useState<TaskFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
@@ -87,6 +91,12 @@ export function MaintenanceTasksPage({
   )) ?? []
   const selectedFilterFacility = maintenanceTasksData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
+  )
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPage))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const paginatedTasks = filteredTasks.slice(
+    (safeCurrentPage - 1) * itemsPerPage,
+    safeCurrentPage * itemsPerPage,
   )
 
   function updateField(field: keyof TaskFormState, value: string) {
@@ -366,7 +376,13 @@ export function MaintenanceTasksPage({
 
           <label className="list-filter">
             <span>Display</span>
-            <select value={facilityFilterId} onChange={(event) => setFacilityFilterId(event.target.value)}>
+            <select
+              value={facilityFilterId}
+              onChange={(event) => {
+                setFacilityFilterId(event.target.value)
+                setCurrentPage(1)
+              }}
+            >
               <option value="all">All facilities</option>
               {maintenanceTasksData?.facilities.map((facility) => (
                 <option key={facility.id} value={facility.id}>
@@ -377,8 +393,8 @@ export function MaintenanceTasksPage({
           </label>
 
           <div className="maintenance-grid">
-            {filteredTasks.length ? (
-              filteredTasks.map((task) => (
+            {paginatedTasks.length ? (
+              paginatedTasks.map((task) => (
                 <article className="list-card tool-management-card" key={task.id}>
                   <div className="list-row">
                     <span className={`pill ${getStatusClass(task.status)}`}>{task.status}</span>
@@ -426,6 +442,13 @@ export function MaintenanceTasksPage({
               <p className="empty-state">No maintenance tasks match this facility filter.</p>
             )}
           </div>
+
+          <Pagination
+            currentPage={safeCurrentPage}
+            onPageChange={setCurrentPage}
+            pageSize={itemsPerPage}
+            totalItems={filteredTasks.length}
+          />
         </article>
       </section>
     </>

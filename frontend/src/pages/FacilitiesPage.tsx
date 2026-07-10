@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { createFacility, deleteFacility, updateFacility } from '../api/facilities'
+import { Pagination } from '../components/Pagination'
 import type { FacilitiesData, FacilityPayload } from '../types/app'
 
 type FacilitiesPageProps = {
@@ -26,6 +27,8 @@ const emptyForm: FacilityFormState = {
   type: '',
 }
 
+const itemsPerPage = 8
+
 function getStatusClass(status: string) {
   if (status === 'critical') {
     return 'error'
@@ -45,14 +48,35 @@ export function FacilitiesPage({
   onSelectedFacilityChange,
 }: FacilitiesPageProps) {
   const [form, setForm] = useState<FacilityFormState>(emptyForm)
+  const [alertsPage, setAlertsPage] = useState(1)
   const [editingFacilityId, setEditingFacilityId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [tasksPage, setTasksPage] = useState(1)
+  const [toolsPage, setToolsPage] = useState(1)
   const [formError, setFormError] = useState<string | null>(null)
 
   const selectedFacility =
     facilitiesData?.facilities.find((facility) => facility.id === selectedFacilityId) ??
     facilitiesData?.facilities[0] ??
     null
+  const facilityTools = selectedFacility?.automated_tools ?? []
+  const facilityAlerts = selectedFacility?.alerts ?? []
+  const facilityTasks = selectedFacility?.maintenance_tasks ?? []
+  const toolsTotalPages = Math.max(1, Math.ceil(facilityTools.length / itemsPerPage))
+  const alertsTotalPages = Math.max(1, Math.ceil(facilityAlerts.length / itemsPerPage))
+  const tasksTotalPages = Math.max(1, Math.ceil(facilityTasks.length / itemsPerPage))
+  const safeToolsPage = Math.min(toolsPage, toolsTotalPages)
+  const safeAlertsPage = Math.min(alertsPage, alertsTotalPages)
+  const safeTasksPage = Math.min(tasksPage, tasksTotalPages)
+  const paginatedTools = facilityTools.slice((safeToolsPage - 1) * itemsPerPage, safeToolsPage * itemsPerPage)
+  const paginatedAlerts = facilityAlerts.slice((safeAlertsPage - 1) * itemsPerPage, safeAlertsPage * itemsPerPage)
+  const paginatedTasks = facilityTasks.slice((safeTasksPage - 1) * itemsPerPage, safeTasksPage * itemsPerPage)
+
+  function resetPagination() {
+    setAlertsPage(1)
+    setTasksPage(1)
+    setToolsPage(1)
+  }
 
   function updateField(field: keyof FacilityFormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -156,6 +180,7 @@ export function FacilitiesPage({
                 const facilityId = Number(event.target.value)
 
                 if (facilityId) {
+                  resetPagination()
                   onSelectedFacilityChange(facilityId)
                 }
               }}
@@ -293,28 +318,39 @@ export function FacilitiesPage({
                 </div>
 
                 <div className="facility-grid">
-                  {selectedFacility.automated_tools.map((tool) => (
-                    <article className="facility-card" key={tool.id}>
-                      <div className="facility-topline">
-                        <span className={`pill ${getStatusClass(tool.status)}`}>{tool.status}</span>
-                        <span className="facility-type">{tool.type}</span>
-                      </div>
-                      <h3>{tool.name}</h3>
-                      <p>{tool.location}</p>
-                      <div className="tool-reading">
-                        <strong>
-                          {tool.latest_sensor_reading
-                            ? `${tool.latest_sensor_reading.value} ${tool.latest_sensor_reading.unit}`
-                            : 'No reading yet'}
-                        </strong>
-                        <span className="list-meta">
-                          Normal range: {tool.normal_min} to {tool.normal_max} {tool.unit}
-                        </span>
-                        <span className="list-meta">{tool.open_alerts_count} open alerts</span>
-                      </div>
-                    </article>
-                  ))}
+                  {paginatedTools.length ? (
+                    paginatedTools.map((tool) => (
+                      <article className="facility-card" key={tool.id}>
+                        <div className="facility-topline">
+                          <span className={`pill ${getStatusClass(tool.status)}`}>{tool.status}</span>
+                          <span className="facility-type">{tool.type}</span>
+                        </div>
+                        <h3>{tool.name}</h3>
+                        <p>{tool.location}</p>
+                        <div className="tool-reading">
+                          <strong>
+                            {tool.latest_sensor_reading
+                              ? `${tool.latest_sensor_reading.value} ${tool.latest_sensor_reading.unit}`
+                              : 'No reading yet'}
+                          </strong>
+                          <span className="list-meta">
+                            Normal range: {tool.normal_min} to {tool.normal_max} {tool.unit}
+                          </span>
+                          <span className="list-meta">{tool.open_alerts_count} open alerts</span>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p className="empty-state">No automated tools for this facility yet.</p>
+                  )}
                 </div>
+
+                <Pagination
+                  currentPage={safeToolsPage}
+                  onPageChange={setToolsPage}
+                  pageSize={itemsPerPage}
+                  totalItems={facilityTools.length}
+                />
               </section>
 
               <section className="status-panel">
@@ -327,8 +363,8 @@ export function FacilitiesPage({
                   </div>
 
                   <div className="list-stack">
-                    {selectedFacility.alerts.length ? (
-                      selectedFacility.alerts.map((alert) => (
+                    {paginatedAlerts.length ? (
+                      paginatedAlerts.map((alert) => (
                         <article className="list-card" key={alert.id}>
                           <div className="list-row">
                             <span className={`pill ${alert.severity === 'high' ? 'error' : 'pending'}`}>
@@ -346,6 +382,13 @@ export function FacilitiesPage({
                       <p className="empty-state">No alerts for this facility yet.</p>
                     )}
                   </div>
+
+                  <Pagination
+                    currentPage={safeAlertsPage}
+                    onPageChange={setAlertsPage}
+                    pageSize={itemsPerPage}
+                    totalItems={facilityAlerts.length}
+                  />
                 </article>
 
                 <article className="list-panel">
@@ -357,8 +400,8 @@ export function FacilitiesPage({
                   </div>
 
                   <div className="list-stack">
-                    {selectedFacility.maintenance_tasks.length ? (
-                      selectedFacility.maintenance_tasks.map((task) => (
+                    {paginatedTasks.length ? (
+                      paginatedTasks.map((task) => (
                         <article className="list-card" key={task.id}>
                           <div className="list-row">
                             <span className={`pill ${task.status === 'in_progress' ? 'pending' : 'ok'}`}>
@@ -376,6 +419,13 @@ export function FacilitiesPage({
                       <p className="empty-state">No maintenance tasks for this facility yet.</p>
                     )}
                   </div>
+
+                  <Pagination
+                    currentPage={safeTasksPage}
+                    onPageChange={setTasksPage}
+                    pageSize={itemsPerPage}
+                    totalItems={facilityTasks.length}
+                  />
                 </article>
               </section>
             </>
