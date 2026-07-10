@@ -10,6 +10,16 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+COPY composer.json composer.lock ./
+
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --no-scripts
+
+COPY . .
+
+RUN composer dump-autoload --optimize \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
 COPY docker/start.sh /usr/local/bin/start-backend
 
 RUN chmod +x /usr/local/bin/start-backend

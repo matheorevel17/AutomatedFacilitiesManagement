@@ -1,106 +1,214 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { fetchAlerts } from './api/alerts'
+import { fetchAutomatedTools } from './api/automatedTools'
+import { getCurrentUser, login as loginRequest, logout as logoutRequest } from './api/auth'
+import { fetchDashboard } from './api/dashboard'
+import { fetchFacilities } from './api/facilities'
+import { fetchMaintenanceTasks } from './api/maintenanceTasks'
+import { fetchSimulationData } from './api/simulation'
 import './App.css'
-
-type BackendStatus = {
-  message?: string
-  name?: string
-  status?: string
-}
+import { TopNav } from './components/TopNav'
+import { AlertsPage } from './pages/AlertsPage'
+import { AutomatedToolsPage } from './pages/AutomatedToolsPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { FacilitiesPage } from './pages/FacilitiesPage'
+import { LoginPage } from './pages/LoginPage'
+import { MaintenanceTasksPage } from './pages/MaintenanceTasksPage'
+import { SimulationPage } from './pages/SimulationPage'
+import { SessionLoadingPage } from './pages/SessionLoadingPage'
+import type {
+  AlertsData,
+  AppPage,
+  AuthUser,
+  AutomatedToolsData,
+  DashboardData,
+  FacilitiesData,
+  MaintenanceTasksData,
+  SimulationData,
+} from './types/app'
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null)
+  const [activePage, setActivePage] = useState<AppPage>('dashboard')
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
+  const [facilitiesData, setFacilitiesData] = useState<FacilitiesData | null>(null)
+  const [automatedToolsData, setAutomatedToolsData] = useState<AutomatedToolsData | null>(null)
+  const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
+  const [maintenanceTasksData, setMaintenanceTasksData] = useState<MaintenanceTasksData | null>(null)
+  const [simulationData, setSimulationData] = useState<SimulationData | null>(null)
+  const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null)
+  const [email, setEmail] = useState('admin@stagebali.test')
+  const [password, setPassword] = useState('password')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+
+  const loadDashboard = useCallback(async function loadDashboard() {
+    setDashboard(await fetchDashboard())
+  }, [])
+
+  const loadFacilities = useCallback(async function loadFacilities() {
+    const facilitiesPayload = await fetchFacilities()
+    setFacilitiesData(facilitiesPayload)
+    setSelectedFacilityId((current) => current ?? facilitiesPayload.facilities[0]?.id ?? null)
+  }, [])
+
+  const loadAlerts = useCallback(async function loadAlerts() {
+    setAlertsData(await fetchAlerts())
+  }, [])
+
+  const loadAutomatedTools = useCallback(async function loadAutomatedTools() {
+    setAutomatedToolsData(await fetchAutomatedTools())
+  }, [])
+
+  const loadMaintenanceTasks = useCallback(async function loadMaintenanceTasks() {
+    setMaintenanceTasksData(await fetchMaintenanceTasks())
+  }, [])
+
+  const loadSimulationData = useCallback(async function loadSimulationData() {
+    setSimulationData(await fetchSimulationData())
+  }, [])
+
+  const loadAppData = useCallback(async function loadAppData() {
+    await Promise.all([
+      loadDashboard(),
+      loadFacilities(),
+      loadAutomatedTools(),
+      loadSimulationData(),
+      loadAlerts(),
+      loadMaintenanceTasks(),
+    ])
+  }, [loadAlerts, loadAutomatedTools, loadDashboard, loadFacilities, loadMaintenanceTasks, loadSimulationData])
+
+  const resetAppData = useCallback(function resetAppData() {
+    setUser(null)
+    setDashboard(null)
+    setFacilitiesData(null)
+    setAutomatedToolsData(null)
+    setAlertsData(null)
+    setMaintenanceTasksData(null)
+    setSimulationData(null)
+    setSelectedFacilityId(null)
+    setActivePage('dashboard')
+  }, [])
 
   useEffect(() => {
-    const controller = new AbortController()
-
-    async function loadStatus() {
+    async function loadSession() {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api'
-        const response = await fetch(`${apiUrl}/health`, {
-          signal: controller.signal,
-        })
+        const currentUser = await getCurrentUser()
 
-        if (!response.ok) {
-          throw new Error(`Backend answered with ${response.status}`)
+        if (!currentUser) {
+          resetAppData()
+          return
         }
 
-        const data = (await response.json()) as BackendStatus
-        setBackendStatus(data)
+        setUser(currentUser)
+        await loadAppData()
       } catch (fetchError) {
-        if (fetchError instanceof Error && fetchError.name !== 'AbortError') {
+        if (fetchError instanceof Error) {
           setError(fetchError.message)
         }
+      } finally {
+        setIsCheckingSession(false)
       }
     }
 
-    loadStatus()
+    loadSession()
+  }, [loadAppData, resetAppData])
 
-    return () => controller.abort()
-  }, [])
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const authenticatedUser = await loginRequest(email, password)
+      setUser(authenticatedUser)
+      setActivePage('dashboard')
+      await loadAppData()
+    } catch (loginError) {
+      if (loginError instanceof Error) {
+        setError(loginError.message)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleLogout() {
+    setError(null)
+
+    try {
+      await logoutRequest()
+      resetAppData()
+    } catch (logoutError) {
+      if (logoutError instanceof Error) {
+        setError(logoutError.message)
+      }
+    }
+  }
+
+  if (isCheckingSession) {
+    return <SessionLoadingPage />
+  }
+
+  if (!user) {
+    return (
+      <LoginPage
+        email={email}
+        error={error}
+        isSubmitting={isSubmitting}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onSubmit={handleLogin}
+      />
+    )
+  }
 
   return (
     <main className="app-shell">
-      <section className="hero-panel">
-        <p className="eyebrow">StageBali starter stack</p>
-        <h1>Laravel, React TS, MySQL, Docker.</h1>
-        <p className="lede">
-          Base de dev minimale pour lancer le backend et le frontend proprement
-          des le premier jour.
-        </p>
+      <TopNav activePage={activePage} user={user} onLogout={handleLogout} onPageChange={setActivePage} />
 
-        <div className="stack-grid">
-          <article>
-            <span>Backend</span>
-            <strong>Laravel 13</strong>
-          </article>
-          <article>
-            <span>Frontend</span>
-            <strong>React + TypeScript</strong>
-          </article>
-          <article>
-            <span>Database</span>
-            <strong>MySQL 8</strong>
-          </article>
-          <article>
-            <span>Runtime</span>
-            <strong>Docker Compose</strong>
-          </article>
-        </div>
-      </section>
+      {activePage === 'dashboard' ? (
+        <DashboardPage dashboard={dashboard} user={user} />
+      ) : null}
 
-      <section className="status-panel">
-        <div className="status-copy">
-          <p className="eyebrow">Connexion backend</p>
-          <h2>Healthcheck API</h2>
-          <p>
-            Le frontend tente un appel sur <code>/api/health</code> au
-            chargement.
-          </p>
-        </div>
+      {activePage === 'facilities' ? (
+        <FacilitiesPage
+          facilitiesData={facilitiesData}
+          selectedFacilityId={selectedFacilityId}
+          onDataChanged={loadAppData}
+          onSelectedFacilityChange={setSelectedFacilityId}
+        />
+      ) : null}
 
-        <div className="status-card">
-          {backendStatus ? (
-            <>
-              <span className="pill ok">Backend reachable</span>
-              <strong>{backendStatus.name ?? 'Laravel'}</strong>
-              <p>{backendStatus.message ?? 'Backend is running.'}</p>
-            </>
-          ) : error ? (
-            <>
-              <span className="pill error">Connexion indisponible</span>
-              <strong>Backend non joignable</strong>
-              <p>{error}</p>
-            </>
-          ) : (
-            <>
-              <span className="pill pending">Verification</span>
-              <strong>Test de connexion en cours</strong>
-              <p>Le frontend attend la reponse du backend.</p>
-            </>
-          )}
-        </div>
-      </section>
+      {activePage === 'automated-tools' ? (
+        <AutomatedToolsPage
+          automatedToolsData={automatedToolsData}
+          onDataChanged={loadAppData}
+        />
+      ) : null}
+
+      {activePage === 'simulation' ? (
+        <SimulationPage
+          simulationData={simulationData}
+          onAlertCreated={() => setActivePage('alerts')}
+          onDataChanged={loadAppData}
+        />
+      ) : null}
+
+      {activePage === 'alerts' ? (
+        <AlertsPage alertsData={alertsData} onDataChanged={loadAppData} />
+      ) : null}
+
+      {activePage === 'maintenance' ? (
+        <MaintenanceTasksPage
+          maintenanceTasksData={maintenanceTasksData}
+          onDataChanged={loadAppData}
+        />
+      ) : null}
     </main>
   )
 }

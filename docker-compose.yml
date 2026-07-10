@@ -34,6 +34,7 @@ services:
       DB_DATABASE: app
       DB_USERNAME: laravel
       DB_PASSWORD: laravel
+      RUN_MIGRATIONS: "true"
     ports:
       - "8000:8000"
     volumes:
