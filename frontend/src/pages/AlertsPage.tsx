@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { createAlert, deleteAlert, updateAlert, updateAlertStatus } from '../api/alerts'
+import { createAlert, updateAlert, updateAlertStatus } from '../api/alerts'
 import { Pagination } from '../components/Pagination'
 import type { AlertPayload, AlertsData } from '../types/app'
 
@@ -209,27 +209,6 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
     }
   }
 
-  async function handleDelete(alertId: number) {
-    if (!window.confirm('Delete this alert? Related maintenance tasks will keep their data but lose this alert link.')) {
-      return
-    }
-
-    setFormError(null)
-
-    try {
-      await deleteAlert(alertId)
-      await onDataChanged()
-
-      if (editingAlertId === alertId) {
-        resetForm()
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        setFormError(error.message)
-      }
-    }
-  }
-
   return (
     <>
       <section className="hero-panel">
@@ -426,9 +405,6 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
                         Mark resolved
                       </button>
                     ) : null}
-                    <button className="danger-button" type="button" onClick={() => handleDelete(alert.id)}>
-                      Delete
-                    </button>
                   </div>
                 </article>
               ))

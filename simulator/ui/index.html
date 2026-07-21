@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StageBali Sensor Simulator</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">External simulator</p>
+        <h1>Send JSON sensor data to StageBali.</h1>
+        <p>
+          This interface is separated from the monitoring app. It generates sensor readings and sends them to the
+          Laravel cloud ingestion API.
+        </p>
+      </section>
+
+      <section class="layout">
+        <form id="simulator-form" class="panel form-panel">
+          <label>
+            <span>API URL</span>
+            <input
+              name="apiUrl"
+              type="url"
+              value="http://localhost:8000/api/cloud/sensor-readings"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Cloud token</span>
+            <input name="token" type="password" placeholder="Only required in production" />
+          </label>
+
+          <button id="load-options-button" class="secondary-button" type="button">Load facilities and tools</button>
+
+          <label>
+            <span>Facility</span>
+            <select id="facility-select" name="facilityId" required>
+              <option value="">Load options first</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Automated tool</span>
+            <select id="tool-select" name="toolId" required>
+              <option value="">Load options first</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Unit</span>
+            <input id="unit-input" name="unit" value="bar" readonly required />
+          </label>
+
+          <label>
+            <span>Scenario</span>
+            <select name="scenario">
+              <option value="normal_operation">Normal operation</option>
+              <option value="possible_water_leak">Possible water leak</option>
+              <option value="low_water_level">Low water level</option>
+              <option value="water_pollution_detected">Water pollution detected</option>
+              <option value="poor_cooling_performance">Poor cooling performance</option>
+              <option value="high_humidity_level">High humidity level</option>
+              <option value="poor_air_quality">Poor air quality</option>
+              <option value="abnormal_sensor_values">Abnormal sensor values</option>
+            </select>
+          </label>
+
+          <div class="grid">
+            <label>
+              <span>Count</span>
+              <input name="count" type="number" value="10" min="1" max="200" required />
+            </label>
+
+            <label>
+              <span>Std deviation</span>
+              <input name="standardDeviation" type="number" value="0.1" min="0" step="0.01" required />
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              <span>Normal min</span>
+              <input name="normalMin" type="number" value="2.5" step="0.01" required />
+            </label>
+
+            <label>
+              <span>Normal max</span>
+              <input name="normalMax" type="number" value="4.5" step="0.01" required />
+            </label>
+          </div>
+
+          <label>
+            <span>Mean value</span>
+            <input name="mean" type="number" value="3.5" step="0.01" required />
+          </label>
+
+          <input name="intervalMs" type="hidden" value="5000" />
+
+          <div class="button-row">
+            <button id="generate-button" type="submit">Generate data</button>
+            <button id="send-button" class="secondary-button" type="button" disabled>Send generated data</button>
+          </div>
+        </form>
+
+        <section class="panel result-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Result</p>
+              <h2>Last API response</h2>
+            </div>
+          </div>
+
+          <div id="status" class="status-card">No request sent yet.</div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Tool</th>
+                  <th>Value</th>
+                  <th>Unit</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="readings-body">
+                <tr>
+                  <td colspan="5">Generated readings will appear here.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

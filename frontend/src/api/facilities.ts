@@ -18,9 +18,3 @@ export async function updateFacility(facilityId: number, payload: FacilityPayloa
     body: JSON.stringify(payload),
   }), 'Update facility failed')
 }
-
-export async function deleteFacility(facilityId: number) {
-  return readJson(await apiFetch(`/facilities/${facilityId}`, {
-    method: 'DELETE',
-  }), 'Delete facility failed')
-}

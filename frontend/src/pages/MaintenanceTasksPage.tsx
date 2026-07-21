@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   createMaintenanceTask,
-  deleteMaintenanceTask,
   updateMaintenanceTask,
   updateMaintenanceTaskStatus,
 } from '../api/maintenanceTasks'
@@ -190,27 +189,6 @@ export function MaintenanceTasksPage({
     try {
       await updateMaintenanceTaskStatus(taskId, 'resolved')
       await onDataChanged()
-    } catch (error) {
-      if (error instanceof Error) {
-        setFormError(error.message)
-      }
-    }
-  }
-
-  async function handleDelete(taskId: number) {
-    if (!window.confirm('Delete this maintenance task?')) {
-      return
-    }
-
-    setFormError(null)
-
-    try {
-      await deleteMaintenanceTask(taskId)
-      await onDataChanged()
-
-      if (editingTaskId === taskId) {
-        resetForm()
-      }
     } catch (error) {
       if (error instanceof Error) {
         setFormError(error.message)
@@ -432,9 +410,6 @@ export function MaintenanceTasksPage({
                         Mark completed
                       </button>
                     ) : null}
-                    <button className="danger-button" type="button" onClick={() => handleDelete(task.id)}>
-                      Delete
-                    </button>
                   </div>
                 </article>
               ))

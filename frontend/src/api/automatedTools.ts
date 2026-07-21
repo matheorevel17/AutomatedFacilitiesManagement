@@ -18,9 +18,3 @@ export async function updateAutomatedTool(toolId: number, payload: AutomatedTool
     body: JSON.stringify(payload),
   }), 'Update automated tool failed')
 }
-
-export async function deleteAutomatedTool(toolId: number) {
-  return readJson(await apiFetch(`/automated-tools/${toolId}`, {
-    method: 'DELETE',
-  }), 'Delete automated tool failed')
-}

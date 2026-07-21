@@ -8,9 +8,58 @@ use App\Models\SensorReading;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+
+if (! function_exists('classifyIncomingSensorReading')) {
+    function classifyIncomingSensorReading(AutomatedTool $tool, float $value): string
+    {
+        $normalMin = (float) $tool->normal_min;
+        $normalMax = (float) $tool->normal_max;
+        $range = max($normalMax - $normalMin, 1);
+
+        if ($value >= $normalMin && $value <= $normalMax) {
+            return 'normal';
+        }
+
+        $distance = $value < $normalMin ? $normalMin - $value : $value - $normalMax;
+
+        return $distance > ($range * 0.2) ? 'critical' : 'warning';
+    }
+}
+
+if (! function_exists('storeIncomingSensorReading')) {
+    function storeIncomingSensorReading(array $data): SensorReading
+    {
+        $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
+
+        if (isset($data['facility_id']) && (int) $data['facility_id'] !== (int) $tool->facility_id) {
+            throw ValidationException::withMessages([
+                'facility_id' => 'The selected tool must belong to the selected facility.',
+            ]);
+        }
+
+        $unit = $data['unit'] ?? $tool->unit;
+
+        if ($unit !== $tool->unit) {
+            throw ValidationException::withMessages([
+                'unit' => "The unit must match the selected tool unit ({$tool->unit}).",
+            ]);
+        }
+
+        $value = round((float) $data['value'], 2);
+
+        return SensorReading::query()->create([
+            'tool_id' => $tool->id,
+            'recorded_at' => $data['recorded_at'] ?? now(),
+            'value' => $value,
+            'unit' => $tool->unit,
+            'status' => classifyIncomingSensorReading($tool, $value),
+        ]);
+    }
+}
 
 Route::get('/health', function () {
     return response()->json([
@@ -18,6 +67,94 @@ Route::get('/health', function () {
         'status' => 'ok',
         'message' => 'Laravel API is reachable.',
     ]);
+});
+
+Route::get('/cloud/simulator-options', function (Request $request) {
+    $expectedToken = config('services.cloud_ingestion.token');
+
+    if ($expectedToken && ! hash_equals($expectedToken, (string) $request->header('X-Cloud-Token'))) {
+        return response()->json([
+            'message' => 'Invalid cloud ingestion token.',
+        ], 401);
+    }
+
+    if (! $expectedToken && app()->isProduction()) {
+        return response()->json([
+            'message' => 'Cloud ingestion token is not configured.',
+        ], 503);
+    }
+
+    return response()->json([
+        'facilities' => Facility::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'location', 'status']),
+        'tools' => AutomatedTool::query()
+            ->where('status', 'active')
+            ->whereHas('facility', fn ($query) => $query->where('status', 'active'))
+            ->orderBy('facility_id')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'facility_id',
+                'name',
+                'type',
+                'unit',
+                'normal_min',
+                'normal_max',
+                'status',
+            ]),
+    ]);
+});
+
+Route::post('/cloud/sensor-readings', function (Request $request) {
+    $expectedToken = config('services.cloud_ingestion.token');
+
+    if ($expectedToken && ! hash_equals($expectedToken, (string) $request->header('X-Cloud-Token'))) {
+        return response()->json([
+            'message' => 'Invalid cloud ingestion token.',
+        ], 401);
+    }
+
+    if (! $expectedToken && app()->isProduction()) {
+        return response()->json([
+            'message' => 'Cloud ingestion token is not configured.',
+        ], 503);
+    }
+
+    $data = $request->has('readings')
+        ? $request->validate([
+            'readings' => ['required', 'array', 'min:1', 'max:500'],
+            'readings.*.facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
+            'readings.*.tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+            'readings.*.recorded_at' => ['nullable', 'date'],
+            'readings.*.value' => ['required', 'numeric'],
+            'readings.*.unit' => ['nullable', 'string', 'max:30'],
+        ])
+        : ['readings' => [
+            $request->validate([
+                'facility_id' => ['nullable', 'integer', 'exists:facilities,id'],
+                'tool_id' => ['required', 'integer', 'exists:automated_tools,id'],
+                'recorded_at' => ['nullable', 'date'],
+                'value' => ['required', 'numeric'],
+                'unit' => ['nullable', 'string', 'max:30'],
+            ]),
+        ]];
+
+    $readings = DB::transaction(
+        fn () => collect($data['readings'])->map(fn (array $reading) => storeIncomingSensorReading($reading)),
+    );
+
+    return response()->json([
+        'message' => 'Cloud sensor readings received successfully.',
+        'summary' => [
+            'received' => $readings->count(),
+            'normal' => $readings->where('status', 'normal')->count(),
+            'warning' => $readings->where('status', 'warning')->count(),
+            'critical' => $readings->where('status', 'critical')->count(),
+        ],
+        'readings' => $readings->values(),
+    ], 201);
 });
 
 Route::middleware('web')->group(function (): void {
@@ -204,10 +341,13 @@ Route::middleware('web')->group(function (): void {
         });
 
         Route::delete('/facilities/{facility}', function (Facility $facility) {
-            $facility->delete();
+            $facility->update([
+                'status' => 'inactive',
+            ]);
 
             return response()->json([
-                'message' => 'Facility deleted successfully.',
+                'message' => 'Facility marked inactive successfully.',
+                'facility' => $facility,
             ]);
         });
 
@@ -292,10 +432,13 @@ Route::middleware('web')->group(function (): void {
         });
 
         Route::delete('/automated-tools/{automatedTool}', function (AutomatedTool $automatedTool) {
-            $automatedTool->delete();
+            $automatedTool->update([
+                'status' => 'inactive',
+            ]);
 
             return response()->json([
-                'message' => 'Automated tool deleted successfully.',
+                'message' => 'Automated tool marked inactive successfully.',
+                'tool' => $automatedTool->load('facility:id,name,type,location'),
             ]);
         });
 
@@ -405,10 +548,13 @@ Route::middleware('web')->group(function (): void {
         });
 
         Route::delete('/alerts/{alert}', function (Alert $alert) {
-            $alert->delete();
+            $alert->update([
+                'status' => 'resolved',
+            ]);
 
             return response()->json([
-                'message' => 'Alert deleted successfully.',
+                'message' => 'Alert marked resolved successfully.',
+                'alert' => $alert->load(['facility:id,name,type,location', 'tool:id,name,type,location']),
             ]);
         });
 
@@ -776,10 +922,14 @@ Route::middleware('web')->group(function (): void {
         });
 
         Route::delete('/maintenance-tasks/{maintenanceTask}', function (MaintenanceTask $maintenanceTask) {
-            $maintenanceTask->delete();
+            $maintenanceTask->update([
+                'status' => 'resolved',
+                'resolved_at' => $maintenanceTask->resolved_at ?? now(),
+            ]);
 
             return response()->json([
-                'message' => 'Maintenance task deleted successfully.',
+                'message' => 'Maintenance task marked resolved successfully.',
+                'task' => $maintenanceTask->load(['assignedTo:id,name', 'facility:id,name,type,location', 'tool:id,name,type,location', 'alert:id,alert_type,severity,status']),
             ]);
         });
     });

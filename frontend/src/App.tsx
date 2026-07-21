@@ -11,11 +11,11 @@ import './App.css'
 import { TopNav } from './components/TopNav'
 import { AlertsPage } from './pages/AlertsPage'
 import { AutomatedToolsPage } from './pages/AutomatedToolsPage'
+import { DataPage } from './pages/DataPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { FacilitiesPage } from './pages/FacilitiesPage'
 import { LoginPage } from './pages/LoginPage'
 import { MaintenanceTasksPage } from './pages/MaintenanceTasksPage'
-import { SimulationPage } from './pages/SimulationPage'
 import { SessionLoadingPage } from './pages/SessionLoadingPage'
 import type {
   AlertsData,
@@ -192,11 +192,7 @@ function App() {
       ) : null}
 
       {activePage === 'simulation' ? (
-        <SimulationPage
-          simulationData={simulationData}
-          onAlertCreated={() => setActivePage('alerts')}
-          onDataChanged={loadAppData}
-        />
+        <DataPage data={simulationData} onAlertCreated={() => setActivePage('alerts')} onRefresh={loadAppData} />
       ) : null}
 
       {activePage === 'alerts' ? (

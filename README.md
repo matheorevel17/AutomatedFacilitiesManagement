@@ -57,6 +57,7 @@ DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
 SESSION_DRIVER=database
 SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=none
+CLOUD_INGESTION_TOKEN=CHANGE_ME
 ```
 
 Variables frontend a configurer dans Railway:
@@ -83,3 +84,60 @@ Compte de test cree par le seeder:
 ```txt
 admin@stagebali.test / password
 ```
+
+## Cloud sensor ingestion
+
+Le backend expose une API pour recevoir des valeurs de capteurs depuis un simulateur externe ou un futur service cloud.
+
+Endpoint:
+
+```txt
+POST /api/cloud/sensor-readings
+```
+
+Header si `CLOUD_INGESTION_TOKEN` est configure:
+
+```txt
+X-Cloud-Token: CHANGE_ME
+```
+
+Exemple pour une seule valeur:
+
+```bash
+curl -X POST https://YOUR_BACKEND_DOMAIN.up.railway.app/api/cloud/sensor-readings \
+  -H "Content-Type: application/json" \
+  -H "X-Cloud-Token: CHANGE_ME" \
+  -d '{"tool_id":1,"recorded_at":"2026-07-16T10:00:00Z","value":3.2,"unit":"bar"}'
+```
+
+Exemple pour un lot de valeurs:
+
+```json
+{
+  "readings": [
+    {
+      "tool_id": 1,
+      "recorded_at": "2026-07-16T10:00:00Z",
+      "value": 3.2,
+      "unit": "bar"
+    },
+    {
+      "tool_id": 1,
+      "recorded_at": "2026-07-16T10:05:00Z",
+      "value": 1.8,
+      "unit": "bar"
+    }
+  ]
+}
+```
+
+Le backend compare chaque valeur avec la plage normale du tool (`normal_min`, `normal_max`) et stocke le status `normal`, `warning` ou `critical`.
+
+Interface externe du simulateur:
+
+```bash
+cd simulator
+npm run ui
+```
+
+Puis ouvrir `http://localhost:5174`. L'application principale affiche les valeurs recues dans la page `Data`.

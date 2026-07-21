@@ -2,7 +2,6 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import {
   createAutomatedTool,
-  deleteAutomatedTool,
   updateAutomatedTool,
 } from '../api/automatedTools'
 import { Pagination } from '../components/Pagination'
@@ -131,19 +130,29 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
     }
   }
 
-  async function handleDelete(toolId: number) {
-    if (!window.confirm('Delete this automated tool? Linked readings, alerts, and tasks may also be removed.')) {
+  async function handleMarkInactive(tool: AutomatedToolsData['tools'][number]) {
+    if (tool.status === 'inactive') {
       return
     }
 
     setFormError(null)
 
     try {
-      await deleteAutomatedTool(toolId)
+      await updateAutomatedTool(tool.id, {
+        facility_id: tool.facility_id,
+        installation_date: tool.installation_date,
+        location: tool.location,
+        name: tool.name,
+        normal_max: Number(tool.normal_max),
+        normal_min: Number(tool.normal_min),
+        status: 'inactive',
+        type: tool.type,
+        unit: tool.unit,
+      })
       await onDataChanged()
 
-      if (editingToolId === toolId) {
-        resetForm()
+      if (editingToolId === tool.id) {
+        setForm((current) => ({ ...current, status: 'inactive' }))
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -347,9 +356,11 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
                     <button className="secondary-button" type="button" onClick={() => startEdit(tool)}>
                       Edit
                     </button>
-                    <button className="danger-button" type="button" onClick={() => handleDelete(tool.id)}>
-                      Delete
-                    </button>
+                    {tool.status !== 'inactive' ? (
+                      <button className="secondary-button" type="button" onClick={() => handleMarkInactive(tool)}>
+                        Mark inactive
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               ))

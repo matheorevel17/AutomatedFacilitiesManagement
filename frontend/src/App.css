@@ -405,6 +405,20 @@
   outline: none;
 }
 
+.data-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.data-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
 .tool-management-card {
   display: flex;
   flex-direction: column;

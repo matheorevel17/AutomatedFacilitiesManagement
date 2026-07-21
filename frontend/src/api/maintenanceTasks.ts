@@ -28,9 +28,3 @@ export async function updateMaintenanceTaskStatus(taskId: number, status: string
     body: JSON.stringify({ status }),
   }), 'Update maintenance task status failed')
 }
-
-export async function deleteMaintenanceTask(taskId: number) {
-  return readJson(await apiFetch(`/maintenance-tasks/${taskId}`, {
-    method: 'DELETE',
-  }), 'Delete maintenance task failed')
-}

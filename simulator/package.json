@@ -1,0 +1,13 @@
+{
+  "name": "stagebali-sensor-simulator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node send-readings.mjs",
+    "start:continuous": "MODE=continuous node send-readings.mjs",
+    "ui": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

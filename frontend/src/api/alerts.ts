@@ -25,9 +25,3 @@ export async function updateAlertStatus(alertId: number, status: string) {
     body: JSON.stringify({ status }),
   }), 'Update alert status failed')
 }
-
-export async function deleteAlert(alertId: number) {
-  return readJson(await apiFetch(`/alerts/${alertId}`, {
-    method: 'DELETE',
-  }), 'Delete alert failed')
-}

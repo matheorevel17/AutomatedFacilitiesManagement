@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { createFacility, deleteFacility, updateFacility } from '../api/facilities'
+import { createFacility, updateFacility } from '../api/facilities'
 import { Pagination } from '../components/Pagination'
 import type { FacilitiesData, FacilityPayload } from '../types/app'
 
@@ -136,19 +136,25 @@ export function FacilitiesPage({
     }
   }
 
-  async function handleDelete(facilityId: number) {
-    if (!window.confirm('Delete this facility? Linked tools, readings, alerts, and maintenance tasks will also be removed.')) {
+  async function handleMarkInactive(facility: FacilitiesData['facilities'][number]) {
+    if (facility.status === 'inactive') {
       return
     }
 
     setFormError(null)
 
     try {
-      await deleteFacility(facilityId)
+      await updateFacility(facility.id, {
+        description: facility.description ?? null,
+        location: facility.location,
+        name: facility.name,
+        status: 'inactive',
+        type: facility.type,
+      })
       await onDataChanged()
 
-      if (editingFacilityId === facilityId) {
-        resetForm()
+      if (editingFacilityId === facility.id) {
+        setForm((current) => ({ ...current, status: 'inactive' }))
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -277,9 +283,15 @@ export function FacilitiesPage({
                     <button className="secondary-button" type="button" onClick={() => startEdit(selectedFacility)}>
                       Edit
                     </button>
-                    <button className="danger-button" type="button" onClick={() => handleDelete(selectedFacility.id)}>
-                      Delete
-                    </button>
+                    {selectedFacility.status !== 'inactive' ? (
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        onClick={() => handleMarkInactive(selectedFacility)}
+                      >
+                        Mark inactive
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
