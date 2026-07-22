@@ -42,6 +42,25 @@ export type DashboardData = {
     open_alerts: number
     tools: number
   }
+  tools_monitoring: {
+    delayed: number
+    not_reporting: number
+    recent: Array<{
+      id: number
+      latest_sensor_reading?: {
+        recorded_at: string
+        status: string
+        unit: string
+        value: string
+      } | null
+      minutes_since_last_reading: number | null
+      name: string
+      reporting_level: string
+      reporting_status: string
+      status: string
+    }>
+    reporting: number
+  }
 }
 
 export type FacilitiesData = {
@@ -177,8 +196,11 @@ export type AutomatedToolsData = {
   }>
   stats: {
     active: number
+    delayed: number
     inactive: number
     maintenance: number
+    not_reporting: number
+    reporting: number
     total: number
   }
   tools: Array<{
@@ -198,10 +220,14 @@ export type AutomatedToolsData = {
       value: string
     } | null
     location: string
+    minutes_since_last_reading: number | null
     name: string
     normal_max: string
     normal_min: string
+    normal_reference_note: string
     open_alerts_count: number
+    reporting_level: string
+    reporting_status: string
     status: string
     type: string
     unit: string

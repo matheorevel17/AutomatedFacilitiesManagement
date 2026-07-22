@@ -6,6 +6,7 @@ const unitInput = document.querySelector('#unit-input')
 const normalMinInput = form.elements.normalMin
 const normalMaxInput = form.elements.normalMax
 const meanInput = form.elements.mean
+const referenceCard = document.querySelector('#reference-card')
 const statusBox = document.querySelector('#status')
 const readingsBody = document.querySelector('#readings-body')
 const sendButton = document.querySelector('#send-button')
@@ -69,6 +70,7 @@ function syncSelectedTool() {
 
   if (!selectedTool) {
     unitInput.value = ''
+    referenceCard.innerHTML = '<strong>Reference range</strong><p>Select a tool to load its normal operating range.</p>'
     return
   }
 
@@ -79,6 +81,10 @@ function syncSelectedTool() {
   normalMinInput.value = selectedTool.normal_min
   normalMaxInput.value = selectedTool.normal_max
   meanInput.value = ((normalMin + normalMax) / 2).toFixed(2)
+  referenceCard.innerHTML = `
+    <strong>Reference range: ${selectedTool.normal_min} to ${selectedTool.normal_max} ${selectedTool.unit}</strong>
+    <p>${selectedTool.normal_reference_note}</p>
+  `
 }
 
 function syncToolsForFacility() {

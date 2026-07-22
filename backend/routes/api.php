@@ -61,6 +61,67 @@ if (! function_exists('storeIncomingSensorReading')) {
     }
 }
 
+if (! function_exists('getToolReportingStatus')) {
+    function getToolReportingStatus(?SensorReading $reading): array
+    {
+        if (! $reading) {
+            return [
+                'label' => 'no data',
+                'level' => 'offline',
+                'minutes_since_last_reading' => null,
+            ];
+        }
+
+        $minutes = max(0, (int) round($reading->recorded_at->diffInMinutes(now(), false)));
+
+        if ($minutes <= 10) {
+            return [
+                'label' => 'reporting',
+                'level' => 'online',
+                'minutes_since_last_reading' => $minutes,
+            ];
+        }
+
+        if ($minutes <= 30) {
+            return [
+                'label' => 'delayed',
+                'level' => 'delayed',
+                'minutes_since_last_reading' => $minutes,
+            ];
+        }
+
+        return [
+            'label' => 'not reporting',
+            'level' => 'offline',
+            'minutes_since_last_reading' => $minutes,
+        ];
+    }
+}
+
+if (! function_exists('getToolRangeReference')) {
+    function getToolRangeReference(string $type): string
+    {
+        return match ($type) {
+            'pressure_sensor' => 'Prototype range for normal water distribution pressure. Low values can indicate a leak or pump issue; high values can indicate overpressure.',
+            'flow_sensor' => 'Prototype range for normal water flow in the distribution line. Very low flow can indicate blockage; very high flow can indicate leak or abnormal consumption.',
+            'water_level_sensor' => 'Prototype range for safe tank operation. Low level can indicate shortage or pump issue; very high level can indicate overflow risk.',
+            'smart_valve' => 'Prototype range for valve opening feedback. Values outside 0-100% indicate invalid actuator feedback.',
+            'pump_controller' => 'Prototype range for pump load feedback. Values outside 0-100% indicate invalid controller feedback or overload.',
+            'ph_sensor' => 'Common water quality reference range for near-neutral water. Values outside the range can indicate quality issues.',
+            'turbidity_sensor' => 'Prototype clean-water turbidity range. Higher values indicate suspended particles or dirty water.',
+            'water_pollution_sensor' => 'Prototype pollution concentration threshold. Higher values indicate possible contamination.',
+            'temperature_sensor' => 'Prototype indoor comfort range for air-conditioned rooms.',
+            'humidity_sensor' => 'Common indoor comfort humidity range. High humidity can indicate poor cooling or ventilation issues.',
+            'energy_meter' => 'Prototype energy consumption range per monitoring interval. Higher values can indicate inefficient cooling or abnormal usage.',
+            'ac_controller' => 'Prototype AC setpoint range for normal comfort operation.',
+            'co2_sensor' => 'Common indoor air quality reference range. High CO2 can indicate poor ventilation or occupancy issues.',
+            'air_pollution_sensor' => 'Prototype air quality index range for acceptable indoor air conditions.',
+            'pm25_dust_sensor' => 'Prototype PM2.5 concentration range for acceptable indoor air quality.',
+            default => 'Prototype normal operating range used for simulation and defect detection. This can be adjusted after reviewing real facility specifications.',
+        };
+    }
+}
+
 Route::get('/health', function () {
     return response()->json([
         'name' => config('app.name'),
@@ -84,26 +145,33 @@ Route::get('/cloud/simulator-options', function (Request $request) {
         ], 503);
     }
 
+    $tools = AutomatedTool::query()
+        ->where('status', 'active')
+        ->whereHas('facility', fn ($query) => $query->where('status', 'active'))
+        ->orderBy('facility_id')
+        ->orderBy('name')
+        ->get([
+            'id',
+            'facility_id',
+            'name',
+            'type',
+            'unit',
+            'normal_min',
+            'normal_max',
+            'status',
+        ]);
+
+    $tools->each(fn (AutomatedTool $tool) => $tool->setAttribute(
+        'normal_reference_note',
+        getToolRangeReference($tool->type),
+    ));
+
     return response()->json([
         'facilities' => Facility::query()
             ->where('status', 'active')
             ->orderBy('name')
             ->get(['id', 'name', 'type', 'location', 'status']),
-        'tools' => AutomatedTool::query()
-            ->where('status', 'active')
-            ->whereHas('facility', fn ($query) => $query->where('status', 'active'))
-            ->orderBy('facility_id')
-            ->orderBy('name')
-            ->get([
-                'id',
-                'facility_id',
-                'name',
-                'type',
-                'unit',
-                'normal_min',
-                'normal_max',
-                'status',
-            ]),
+        'tools' => $tools,
     ]);
 });
 
@@ -211,12 +279,33 @@ Route::middleware('web')->group(function (): void {
 
     Route::middleware('auth')->group(function (): void {
         Route::get('/dashboard', function () {
+            $tools = AutomatedTool::query()
+                ->with('latestSensorReading')
+                ->get(['id', 'name', 'status']);
+
+            $tools->each(function (AutomatedTool $tool): void {
+                $reporting = getToolReportingStatus($tool->latestSensorReading);
+
+                $tool->setAttribute('reporting_status', $reporting['label']);
+                $tool->setAttribute('reporting_level', $reporting['level']);
+                $tool->setAttribute('minutes_since_last_reading', $reporting['minutes_since_last_reading']);
+            });
+
             return response()->json([
                 'stats' => [
                     'facilities' => Facility::count(),
-                    'tools' => AutomatedTool::count(),
+                    'tools' => $tools->count(),
                     'open_alerts' => Alert::where('status', 'open')->count(),
                     'active_tasks' => MaintenanceTask::whereIn('status', ['pending', 'in_progress'])->count(),
+                ],
+                'tools_monitoring' => [
+                    'reporting' => $tools->where('reporting_level', 'online')->count(),
+                    'delayed' => $tools->where('reporting_level', 'delayed')->count(),
+                    'not_reporting' => $tools->where('reporting_level', 'offline')->count(),
+                    'recent' => $tools
+                        ->sortByDesc(fn (AutomatedTool $tool) => $tool->latestSensorReading?->recorded_at)
+                        ->take(5)
+                        ->values(),
                 ],
                 'facilities' => Facility::query()
                     ->withCount([
@@ -375,12 +464,24 @@ Route::middleware('web')->group(function (): void {
                     'installation_date',
                 ]);
 
+            $tools->each(function (AutomatedTool $tool): void {
+                $reporting = getToolReportingStatus($tool->latestSensorReading);
+
+                $tool->setAttribute('reporting_status', $reporting['label']);
+                $tool->setAttribute('reporting_level', $reporting['level']);
+                $tool->setAttribute('minutes_since_last_reading', $reporting['minutes_since_last_reading']);
+                $tool->setAttribute('normal_reference_note', getToolRangeReference($tool->type));
+            });
+
             return response()->json([
                 'stats' => [
                     'total' => $tools->count(),
                     'active' => $tools->where('status', 'active')->count(),
                     'inactive' => $tools->where('status', 'inactive')->count(),
                     'maintenance' => $tools->where('status', 'maintenance')->count(),
+                    'reporting' => $tools->where('reporting_level', 'online')->count(),
+                    'delayed' => $tools->where('reporting_level', 'delayed')->count(),
+                    'not_reporting' => $tools->where('reporting_level', 'offline')->count(),
                 ],
                 'facilities' => Facility::query()
                     ->orderBy('name')

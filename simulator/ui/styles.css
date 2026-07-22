@@ -158,6 +158,22 @@ button:disabled {
   color: #9a2f16;
 }
 
+.reference-card {
+  border: 1px solid #d7e1e8;
+  border-radius: 14px;
+  background: #f7f9fb;
+  padding: 1rem;
+}
+
+.reference-card strong {
+  color: #0d2235;
+}
+
+.reference-card p {
+  color: #5c6f7d;
+  margin: 0.35rem 0 0;
+}
+
 .table-wrap {
   max-height: 34rem;
   overflow: auto;

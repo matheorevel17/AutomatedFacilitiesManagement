@@ -38,6 +38,34 @@ const emptyForm: ToolFormState = {
 
 const itemsPerPage = 8
 
+function getReportingPillClass(level: string) {
+  if (level === 'online') {
+    return 'ok'
+  }
+
+  if (level === 'delayed') {
+    return 'pending'
+  }
+
+  return 'error'
+}
+
+function formatLastReceived(minutes: number | null) {
+  if (minutes === null) {
+    return 'No data received yet'
+  }
+
+  if (minutes < 1) {
+    return 'Less than 1 minute ago'
+  }
+
+  if (minutes === 1) {
+    return '1 minute ago'
+  }
+
+  return `${minutes} minutes ago`
+}
+
 export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
@@ -171,7 +199,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
           </div>
         </div>
         <p className="lede">
-          Add, edit, link, and monitor automated tools attached to the Water System and Air Conditioning System.
+          Add, edit, link, and monitor automated tools attached to the facilities.
         </p>
 
         <div className="stack-grid">
@@ -190,6 +218,25 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
           <article>
             <span>Maintenance</span>
             <strong>{automatedToolsData?.stats.maintenance ?? 0}</strong>
+          </article>
+        </div>
+
+        <div className="stack-grid compact-grid">
+          <article>
+            <span>Reporting</span>
+            <strong>{automatedToolsData?.stats.reporting ?? 0}</strong>
+          </article>
+          <article>
+            <span>Delayed</span>
+            <strong>{automatedToolsData?.stats.delayed ?? 0}</strong>
+          </article>
+          <article>
+            <span>Not reporting / no data</span>
+            <strong>{automatedToolsData?.stats.not_reporting ?? 0}</strong>
+          </article>
+          <article>
+            <span>Rule</span>
+            <strong>10 min / 30 min</strong>
           </article>
         </div>
       </section>
@@ -334,6 +381,9 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
                     <span className={`pill ${tool.status === 'active' ? 'ok' : 'pending'}`}>{tool.status}</span>
                     <span className="list-meta">{tool.facility?.name ?? 'Unknown facility'}</span>
                   </div>
+                  <span className={`pill ${getReportingPillClass(tool.reporting_level)}`}>
+                    {tool.reporting_status}
+                  </span>
 
                   <h3>{tool.name}</h3>
                   <p>{tool.location}</p>
@@ -343,6 +393,8 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
                     <span className="list-meta">
                       Normal range: {tool.normal_min} to {tool.normal_max} {tool.unit}
                     </span>
+                    <span className="list-meta">Reference: {tool.normal_reference_note}</span>
+                    <span className="list-meta">Last received: {formatLastReceived(tool.minutes_since_last_reading)}</span>
                     <span className="list-meta">
                       Latest value:{' '}
                       {tool.latest_sensor_reading

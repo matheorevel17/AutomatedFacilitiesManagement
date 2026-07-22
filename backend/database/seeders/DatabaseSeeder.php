@@ -141,8 +141,8 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Temperature Sensor',
                     'type' => 'temperature_sensor',
                     'location' => 'Conference Room',
-                    'normal_min' => 21.00,
-                    'normal_max' => 25.00,
+                    'normal_min' => 20.00,
+                    'normal_max' => 26.00,
                     'unit' => '°C',
                     'installed_months_ago' => 4,
                 ],
@@ -196,7 +196,7 @@ class DatabaseSeeder extends Seeder
                     'type' => 'pm25_dust_sensor',
                     'location' => 'Air Intake',
                     'normal_min' => 0.00,
-                    'normal_max' => 15.00,
+                    'normal_max' => 35.00,
                     'unit' => 'µg/m³',
                     'installed_months_ago' => 2,
                 ],
@@ -211,7 +211,7 @@ class DatabaseSeeder extends Seeder
         AutomatedTool::query()
             ->whereIn('facility_id', [$airConditioningFacility->id, $waterFacility->id])
             ->whereNotIn('name', $expectedToolNames)
-            ->delete();
+            ->update(['status' => 'inactive']);
 
         $tools = [];
 

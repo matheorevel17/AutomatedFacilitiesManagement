@@ -5,6 +5,30 @@ type DashboardPageProps = {
   user: AuthUser
 }
 
+function getReportingPillClass(level: string) {
+  if (level === 'online') {
+    return 'ok'
+  }
+
+  if (level === 'delayed') {
+    return 'pending'
+  }
+
+  return 'error'
+}
+
+function formatLastReceived(minutes: number | null) {
+  if (minutes === null) {
+    return 'No data received yet'
+  }
+
+  if (minutes < 1) {
+    return 'Less than 1 minute ago'
+  }
+
+  return `${minutes} min ago`
+}
+
 export function DashboardPage({ dashboard, user }: DashboardPageProps) {
   return (
     <>
@@ -37,6 +61,57 @@ export function DashboardPage({ dashboard, user }: DashboardPageProps) {
             <span>Active tasks</span>
             <strong>{dashboard?.stats.active_tasks ?? 0}</strong>
           </article>
+        </div>
+      </section>
+
+      <section className="section-panel">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Tools monitoring</p>
+            <h2>Communication status</h2>
+          </div>
+        </div>
+
+        <div className="stack-grid compact-grid">
+          <article>
+            <span>Reporting</span>
+            <strong>{dashboard?.tools_monitoring.reporting ?? 0}</strong>
+          </article>
+          <article>
+            <span>Delayed</span>
+            <strong>{dashboard?.tools_monitoring.delayed ?? 0}</strong>
+          </article>
+          <article>
+            <span>Not reporting / no data</span>
+            <strong>{dashboard?.tools_monitoring.not_reporting ?? 0}</strong>
+          </article>
+          <article>
+            <span>Rule</span>
+            <strong>10 min / 30 min</strong>
+          </article>
+        </div>
+
+        <div className="tool-list compact-grid">
+          {dashboard?.tools_monitoring.recent.length ? (
+            dashboard.tools_monitoring.recent.map((tool) => (
+              <article className="list-card" key={tool.id}>
+                <div className="list-row">
+                  <span className={`pill ${getReportingPillClass(tool.reporting_level)}`}>
+                    {tool.reporting_status}
+                  </span>
+                  <span className="list-meta">{formatLastReceived(tool.minutes_since_last_reading)}</span>
+                </div>
+                <h3>{tool.name}</h3>
+                <p>
+                  {tool.latest_sensor_reading
+                    ? `${tool.latest_sensor_reading.value} ${tool.latest_sensor_reading.unit} • ${tool.latest_sensor_reading.status}`
+                    : 'No reading yet'}
+                </p>
+              </article>
+            ))
+          ) : (
+            <p className="empty-state">No automated tools recorded yet.</p>
+          )}
         </div>
       </section>
 
