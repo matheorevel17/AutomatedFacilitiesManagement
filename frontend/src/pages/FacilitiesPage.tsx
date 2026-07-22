@@ -51,6 +51,7 @@ export function FacilitiesPage({
   const [alertsPage, setAlertsPage] = useState(1)
   const [editingFacilityId, setEditingFacilityId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [tasksPage, setTasksPage] = useState(1)
   const [toolsPage, setToolsPage] = useState(1)
   const [formError, setFormError] = useState<string | null>(null)
@@ -86,6 +87,14 @@ export function FacilitiesPage({
     setEditingFacilityId(null)
     setForm(emptyForm)
     setFormError(null)
+    setIsFormModalOpen(false)
+  }
+
+  function openCreateModal() {
+    setEditingFacilityId(null)
+    setForm(emptyForm)
+    setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function startEdit(facility: FacilitiesData['facilities'][number]) {
@@ -98,6 +107,7 @@ export function FacilitiesPage({
       type: facility.type,
     })
     setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function buildPayload(): FacilityPayload {
@@ -206,71 +216,7 @@ export function FacilitiesPage({
         </div>
       </section>
 
-      <section className="facilities-layout">
-        <article className="facilities-sidebar">
-          <section className="section-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">{editingFacilityId ? 'Edit facility' : 'New facility'}</p>
-                <h2>{editingFacilityId ? 'Update facility' : 'Add facility'}</h2>
-              </div>
-              {editingFacilityId ? (
-                <button className="secondary-button" type="button" onClick={resetForm}>
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-
-            <form className="management-form" onSubmit={handleSubmit}>
-              <label>
-                <span>Name</span>
-                <input value={form.name} onChange={(event) => updateField('name', event.target.value)} required />
-              </label>
-
-              <label>
-                <span>Type</span>
-                <input value={form.type} onChange={(event) => updateField('type', event.target.value)} required />
-              </label>
-
-              <label>
-                <span>Location</span>
-                <input
-                  value={form.location}
-                  onChange={(event) => updateField('location', event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                <span>Status</span>
-                <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
-                  <option value="active">active</option>
-                  <option value="warning">warning</option>
-                  <option value="critical">critical</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Description</span>
-                <textarea
-                  rows={4}
-                  value={form.description}
-                  onChange={(event) => updateField('description', event.target.value)}
-                />
-              </label>
-
-              {formError ? <p className="form-error">{formError}</p> : null}
-
-              <button type="submit" disabled={isSaving}>
-                {isSaving ? 'Saving...' : editingFacilityId ? 'Update facility' : 'Add facility'}
-              </button>
-            </form>
-          </section>
-
-        </article>
-
-        <article className="facilities-main">
+      <section className="facilities-main">
           {selectedFacility ? (
             <>
               <section className="section-panel">
@@ -280,6 +226,9 @@ export function FacilitiesPage({
                     <h2>{selectedFacility.name}</h2>
                   </div>
                   <div className="card-actions">
+                    <button className="secondary-button" type="button" onClick={openCreateModal}>
+                      Add facility
+                    </button>
                     <button className="secondary-button" type="button" onClick={() => startEdit(selectedFacility)}>
                       Edit
                     </button>
@@ -446,8 +395,74 @@ export function FacilitiesPage({
               <p className="empty-state">No facility available yet.</p>
             </section>
           )}
-        </article>
       </section>
+
+      {isFormModalOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="facility-form-title">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">{editingFacilityId ? 'Edit facility' : 'New facility'}</p>
+                <h2 id="facility-form-title">{editingFacilityId ? 'Update facility' : 'Add facility'}</h2>
+              </div>
+              <button className="secondary-button" type="button" onClick={resetForm}>
+                Close
+              </button>
+            </div>
+
+            <form className="management-form" onSubmit={handleSubmit}>
+              <label>
+                <span>Name</span>
+                <input value={form.name} onChange={(event) => updateField('name', event.target.value)} required />
+              </label>
+
+              <label>
+                <span>Type</span>
+                <input value={form.type} onChange={(event) => updateField('type', event.target.value)} required />
+              </label>
+
+              <label>
+                <span>Location</span>
+                <input
+                  value={form.location}
+                  onChange={(event) => updateField('location', event.target.value)}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Status</span>
+                <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
+                  <option value="active">active</option>
+                  <option value="warning">warning</option>
+                  <option value="critical">critical</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Description</span>
+                <textarea
+                  rows={4}
+                  value={form.description}
+                  onChange={(event) => updateField('description', event.target.value)}
+                />
+              </label>
+
+              {formError ? <p className="form-error">{formError}</p> : null}
+
+              <div className="card-actions">
+                <button type="submit" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : editingFacilityId ? 'Update facility' : 'Create facility'}
+                </button>
+                <button className="secondary-button" type="button" onClick={resetForm}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </>
   )
 }

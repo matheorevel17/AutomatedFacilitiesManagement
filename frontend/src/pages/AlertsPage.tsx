@@ -88,6 +88,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
   const [facilityFilterId, setFacilityFilterId] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingAlertId, setEditingAlertId] = useState<number | null>(null)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -143,6 +144,24 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
       triggered_at: getDefaultDateTimeLocal(),
     })
     setFormError(null)
+    setIsFormModalOpen(false)
+  }
+
+  function openCreateModal() {
+    const firstFacility = alertsData?.facilities[0]
+    const firstTool = firstFacility
+      ? alertsData?.tools.find((tool) => tool.facility_id === firstFacility.id)
+      : null
+
+    setEditingAlertId(null)
+    setForm({
+      ...emptyForm,
+      facility_id: firstFacility ? String(firstFacility.id) : '',
+      tool_id: firstTool ? String(firstTool.id) : '',
+      triggered_at: getDefaultDateTimeLocal(),
+    })
+    setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function startEdit(alert: AlertsData['alerts'][number]) {
@@ -157,6 +176,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
       triggered_at: toDateTimeLocal(alert.triggered_at),
     })
     setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function buildPayload(): AlertPayload {
@@ -242,116 +262,15 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
         </div>
       </section>
 
-      <section className="management-layout">
-        <article className="section-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{editingAlertId ? 'Edit alert' : 'New alert'}</p>
-              <h2>{editingAlertId ? 'Update alert' : 'Create alert'}</h2>
-            </div>
-            {editingAlertId ? (
-              <button className="secondary-button" type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            ) : null}
-          </div>
-
-          <form className="management-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Alert type</span>
-              <input
-                value={form.alert_type}
-                onChange={(event) => updateField('alert_type', event.target.value)}
-                placeholder="possible_water_leak"
-                required
-              />
-            </label>
-
-            <label>
-              <span>Facility</span>
-              <select
-                value={selectedFacilityId}
-                onChange={(event) => updateField('facility_id', event.target.value)}
-                required
-              >
-                {alertsData?.facilities.map((facility) => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Automated tool</span>
-              <select
-                value={selectedToolId}
-                onChange={(event) => updateField('tool_id', event.target.value)}
-                required
-              >
-                {toolsForFacility.map((tool) => (
-                  <option key={tool.id} value={tool.id}>
-                    {tool.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="form-grid">
-              <label>
-                <span>Severity</span>
-                <select value={form.severity} onChange={(event) => updateField('severity', event.target.value)}>
-                  <option value="low">low</option>
-                  <option value="medium">medium</option>
-                  <option value="high">high</option>
-                  <option value="critical">critical</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Status</span>
-                <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
-                  <option value="open">open</option>
-                  <option value="in_progress">in progress</option>
-                  <option value="resolved">resolved</option>
-                </select>
-              </label>
-            </div>
-
-            <label>
-              <span>Detected time</span>
-              <input
-                type="datetime-local"
-                value={form.triggered_at}
-                onChange={(event) => updateField('triggered_at', event.target.value)}
-                required
-              />
-            </label>
-
-            <label>
-              <span>Message</span>
-              <textarea
-                rows={4}
-                value={form.message}
-                onChange={(event) => updateField('message', event.target.value)}
-                required
-              />
-            </label>
-
-            {formError ? <p className="form-error">{formError}</p> : null}
-
-            <button type="submit" disabled={isSaving || !selectedToolId}>
-              {isSaving ? 'Saving...' : editingAlertId ? 'Update alert' : 'Create alert'}
-            </button>
-          </form>
-        </article>
-
-        <article className="section-panel">
+      <section className="section-panel">
           <div className="section-head">
             <div>
               <p className="eyebrow">Detected issues</p>
               <h2>{selectedFilterFacility ? `${selectedFilterFacility.name} alerts` : 'All current alerts'}</h2>
             </div>
+            <button className="secondary-button" type="button" onClick={openCreateModal}>
+              Create alert
+            </button>
           </div>
 
           <label className="list-filter">
@@ -419,8 +338,117 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
             pageSize={itemsPerPage}
             totalItems={filteredAlerts.length}
           />
-        </article>
       </section>
+
+      {isFormModalOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="alert-form-title">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">{editingAlertId ? 'Edit alert' : 'New alert'}</p>
+                <h2 id="alert-form-title">{editingAlertId ? 'Update alert' : 'Create alert'}</h2>
+              </div>
+              <button className="secondary-button" type="button" onClick={resetForm}>
+                Close
+              </button>
+            </div>
+
+            <form className="management-form" onSubmit={handleSubmit}>
+              <label>
+                <span>Alert type</span>
+                <input
+                  value={form.alert_type}
+                  onChange={(event) => updateField('alert_type', event.target.value)}
+                  placeholder="possible_water_leak"
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Facility</span>
+                <select
+                  value={selectedFacilityId}
+                  onChange={(event) => updateField('facility_id', event.target.value)}
+                  required
+                >
+                  {alertsData?.facilities.map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Automated tool</span>
+                <select
+                  value={selectedToolId}
+                  onChange={(event) => updateField('tool_id', event.target.value)}
+                  required
+                >
+                  {toolsForFacility.map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="form-grid">
+                <label>
+                  <span>Severity</span>
+                  <select value={form.severity} onChange={(event) => updateField('severity', event.target.value)}>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                    <option value="critical">critical</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Status</span>
+                  <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
+                    <option value="open">open</option>
+                    <option value="in_progress">in progress</option>
+                    <option value="resolved">resolved</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                <span>Detected time</span>
+                <input
+                  type="datetime-local"
+                  value={form.triggered_at}
+                  onChange={(event) => updateField('triggered_at', event.target.value)}
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Message</span>
+                <textarea
+                  rows={4}
+                  value={form.message}
+                  onChange={(event) => updateField('message', event.target.value)}
+                  required
+                />
+              </label>
+
+              {formError ? <p className="form-error">{formError}</p> : null}
+
+              <div className="card-actions">
+                <button type="submit" disabled={isSaving || !selectedToolId}>
+                  {isSaving ? 'Saving...' : editingAlertId ? 'Update alert' : 'Create alert'}
+                </button>
+                <button className="secondary-button" type="button" onClick={resetForm}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </>
   )
 }

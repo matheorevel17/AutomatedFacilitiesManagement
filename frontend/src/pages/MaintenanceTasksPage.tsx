@@ -69,6 +69,7 @@ export function MaintenanceTasksPage({
   const [facilityFilterId, setFacilityFilterId] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -128,6 +129,23 @@ export function MaintenanceTasksPage({
       tool_id: firstTool ? String(firstTool.id) : '',
     })
     setFormError(null)
+    setIsFormModalOpen(false)
+  }
+
+  function openCreateModal() {
+    const firstFacility = maintenanceTasksData?.facilities[0]
+    const firstTool = firstFacility
+      ? maintenanceTasksData?.tools.find((tool) => tool.facility_id === firstFacility.id)
+      : null
+
+    setEditingTaskId(null)
+    setForm({
+      ...emptyForm,
+      facility_id: firstFacility ? String(firstFacility.id) : '',
+      tool_id: firstTool ? String(firstTool.id) : '',
+    })
+    setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function startEdit(task: MaintenanceTasksData['tasks'][number]) {
@@ -143,6 +161,7 @@ export function MaintenanceTasksPage({
       tool_id: String(task.tool_id),
     })
     setFormError(null)
+    setIsFormModalOpen(true)
   }
 
   function buildPayload(): MaintenanceTaskPayload {
@@ -229,127 +248,15 @@ export function MaintenanceTasksPage({
         </div>
       </section>
 
-      <section className="management-layout">
-        <article className="section-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">{editingTaskId ? 'Edit task' : 'New task'}</p>
-              <h2>{editingTaskId ? 'Update maintenance task' : 'Create maintenance task'}</h2>
-            </div>
-            {editingTaskId ? (
-              <button className="secondary-button" type="button" onClick={resetForm}>
-                Cancel
-              </button>
-            ) : null}
-          </div>
-
-          <form className="management-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Title</span>
-              <input value={form.title} onChange={(event) => updateField('title', event.target.value)} required />
-            </label>
-
-            <label>
-              <span>Facility</span>
-              <select
-                value={selectedFacilityId}
-                onChange={(event) => updateField('facility_id', event.target.value)}
-                required
-              >
-                {maintenanceTasksData?.facilities.map((facility) => (
-                  <option key={facility.id} value={facility.id}>
-                    {facility.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Automated tool</span>
-              <select
-                value={selectedToolId}
-                onChange={(event) => updateField('tool_id', event.target.value)}
-                required
-              >
-                {toolsForFacility.map((tool) => (
-                  <option key={tool.id} value={tool.id}>
-                    {tool.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Related alert</span>
-              <select value={form.alert_id} onChange={(event) => updateField('alert_id', event.target.value)}>
-                <option value="">No related alert</option>
-                {alertsForFacility.map((alert) => (
-                  <option key={alert.id} value={alert.id}>
-                    {alert.alert_type} - {alert.severity} - {alert.status}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Assigned user</span>
-              <select
-                value={form.assigned_to_user_id}
-                onChange={(event) => updateField('assigned_to_user_id', event.target.value)}
-              >
-                <option value="">Unassigned</option>
-                {maintenanceTasksData?.users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.role})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="form-grid">
-              <label>
-                <span>Status</span>
-                <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
-                  <option value="pending">pending</option>
-                  <option value="in_progress">in progress</option>
-                  <option value="resolved">resolved</option>
-                </select>
-              </label>
-
-              <label>
-                <span>Priority</span>
-                <select value={form.priority} onChange={(event) => updateField('priority', event.target.value)}>
-                  <option value="low">low</option>
-                  <option value="medium">medium</option>
-                  <option value="high">high</option>
-                  <option value="critical">critical</option>
-                </select>
-              </label>
-            </div>
-
-            <label>
-              <span>Description</span>
-              <textarea
-                rows={4}
-                value={form.description}
-                onChange={(event) => updateField('description', event.target.value)}
-              />
-            </label>
-
-            {formError ? <p className="form-error">{formError}</p> : null}
-
-            <button type="submit" disabled={isSaving || !selectedToolId}>
-              {isSaving ? 'Saving...' : editingTaskId ? 'Update task' : 'Create task'}
-            </button>
-          </form>
-        </article>
-
-        <article className="section-panel">
+      <section className="section-panel">
           <div className="section-head">
             <div>
               <p className="eyebrow">Task tracking</p>
               <h2>{selectedFilterFacility ? `${selectedFilterFacility.name} maintenance tasks` : 'All maintenance tasks'}</h2>
             </div>
+            <button className="secondary-button" type="button" onClick={openCreateModal}>
+              Create task
+            </button>
           </div>
 
           <label className="list-filter">
@@ -424,8 +331,128 @@ export function MaintenanceTasksPage({
             pageSize={itemsPerPage}
             totalItems={filteredTasks.length}
           />
-        </article>
       </section>
+
+      {isFormModalOpen ? (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="task-form-title">
+            <div className="section-head">
+              <div>
+                <p className="eyebrow">{editingTaskId ? 'Edit task' : 'New task'}</p>
+                <h2 id="task-form-title">{editingTaskId ? 'Update maintenance task' : 'Create maintenance task'}</h2>
+              </div>
+              <button className="secondary-button" type="button" onClick={resetForm}>
+                Close
+              </button>
+            </div>
+
+            <form className="management-form" onSubmit={handleSubmit}>
+              <label>
+                <span>Title</span>
+                <input value={form.title} onChange={(event) => updateField('title', event.target.value)} required />
+              </label>
+
+              <label>
+                <span>Facility</span>
+                <select
+                  value={selectedFacilityId}
+                  onChange={(event) => updateField('facility_id', event.target.value)}
+                  required
+                >
+                  {maintenanceTasksData?.facilities.map((facility) => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Automated tool</span>
+                <select
+                  value={selectedToolId}
+                  onChange={(event) => updateField('tool_id', event.target.value)}
+                  required
+                >
+                  {toolsForFacility.map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Related alert</span>
+                <select value={form.alert_id} onChange={(event) => updateField('alert_id', event.target.value)}>
+                  <option value="">No related alert</option>
+                  {alertsForFacility.map((alert) => (
+                    <option key={alert.id} value={alert.id}>
+                      {alert.alert_type} - {alert.severity} - {alert.status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Assigned user</span>
+                <select
+                  value={form.assigned_to_user_id}
+                  onChange={(event) => updateField('assigned_to_user_id', event.target.value)}
+                >
+                  <option value="">Unassigned</option>
+                  {maintenanceTasksData?.users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} ({user.role})
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="form-grid">
+                <label>
+                  <span>Status</span>
+                  <select value={form.status} onChange={(event) => updateField('status', event.target.value)}>
+                    <option value="pending">pending</option>
+                    <option value="in_progress">in progress</option>
+                    <option value="resolved">resolved</option>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Priority</span>
+                  <select value={form.priority} onChange={(event) => updateField('priority', event.target.value)}>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                    <option value="critical">critical</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                <span>Description</span>
+                <textarea
+                  rows={4}
+                  value={form.description}
+                  onChange={(event) => updateField('description', event.target.value)}
+                />
+              </label>
+
+              {formError ? <p className="form-error">{formError}</p> : null}
+
+              <div className="card-actions">
+                <button type="submit" disabled={isSaving || !selectedToolId}>
+                  {isSaving ? 'Saving...' : editingTaskId ? 'Update task' : 'Create task'}
+                </button>
+                <button className="secondary-button" type="button" onClick={resetForm}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
     </>
   )
 }
