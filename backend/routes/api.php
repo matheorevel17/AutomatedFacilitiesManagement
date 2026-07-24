@@ -252,6 +252,29 @@ Route::middleware('web')->group(function (): void {
         ]);
     });
 
+    Route::post('/register', function (Request $request) {
+        $data = $request->validate([
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::query()->create([
+            'name' => strtok($data['email'], '@'),
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'role' => 'technician',
+            'email_verified_at' => now(),
+        ]);
+
+        Auth::login($user, true);
+        $request->session()->regenerate();
+
+        return response()->json([
+            'message' => 'Account created successfully.',
+            'user' => $user->only(['id', 'name', 'email', 'role']),
+        ], 201);
+    });
+
     Route::post('/logout', function (Request $request) {
         Auth::guard('web')->logout();
 

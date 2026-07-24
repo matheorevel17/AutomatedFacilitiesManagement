@@ -195,6 +195,16 @@
   color: var(--muted);
 }
 
+.auth-switch-button {
+  margin-top: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
 .eyebrow {
   margin-bottom: 0.8rem;
   text-transform: uppercase;

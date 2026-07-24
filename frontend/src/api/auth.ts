@@ -40,6 +40,30 @@ export async function login(email: string, password: string) {
   return data.user
 }
 
+export async function register(email: string, password: string, passwordConfirmation: string) {
+  const response = await apiFetch('/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      email,
+      password,
+      password_confirmation: passwordConfirmation,
+    }),
+  })
+
+  const data = (await response.json()) as LoginResponse
+
+  if (!response.ok || !('user' in data) || !data.user) {
+    if ('errors' in data && data.errors) {
+      const firstError = Object.values(data.errors).flat()[0]
+      throw new Error(firstError ?? 'Registration failed.')
+    }
+
+    throw new Error('Registration failed.')
+  }
+
+  return data.user
+}
+
 export async function logout() {
   await apiFetch('/logout', { method: 'POST' })
   clearCsrfToken()

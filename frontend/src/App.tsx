@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchAlerts } from './api/alerts'
 import { fetchAutomatedTools } from './api/automatedTools'
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from './api/auth'
+import { getCurrentUser, login as loginRequest, logout as logoutRequest, register as registerRequest } from './api/auth'
 import { fetchDashboard } from './api/dashboard'
 import { fetchFacilities } from './api/facilities'
 import { fetchMaintenanceTasks } from './api/maintenanceTasks'
@@ -28,6 +28,10 @@ import type {
   SimulationData,
 } from './types/app'
 
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
 function App() {
   const [activePage, setActivePage] = useState<AppPage>('dashboard')
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -40,6 +44,7 @@ function App() {
   const [selectedFacilityId, setSelectedFacilityId] = useState<number | null>(null)
   const [email, setEmail] = useState('admin@stagebali.test')
   const [password, setPassword] = useState('password')
+  const [passwordConfirmation, setPasswordConfirmation] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
@@ -119,8 +124,14 @@ function App() {
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setIsSubmitting(true)
     setError(null)
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    setIsSubmitting(true)
 
     try {
       const authenticatedUser = await loginRequest(email, password)
@@ -130,6 +141,36 @@ function App() {
     } catch (loginError) {
       if (loginError instanceof Error) {
         setError(loginError.message)
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError(null)
+
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    if (password !== passwordConfirmation) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    setIsSubmitting(true)
+
+    try {
+      const authenticatedUser = await registerRequest(email, password, passwordConfirmation)
+      setUser(authenticatedUser)
+      setActivePage('dashboard')
+      await loadAppData()
+    } catch (registerError) {
+      if (registerError instanceof Error) {
+        setError(registerError.message)
       }
     } finally {
       setIsSubmitting(false)
@@ -160,7 +201,10 @@ function App() {
         error={error}
         isSubmitting={isSubmitting}
         password={password}
+        passwordConfirmation={passwordConfirmation}
         onEmailChange={setEmail}
+        onPasswordConfirmationChange={setPasswordConfirmation}
+        onRegister={handleRegister}
         onPasswordChange={setPassword}
         onSubmit={handleLogin}
       />
