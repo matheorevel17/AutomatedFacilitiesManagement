@@ -27,6 +27,8 @@ export function LoginPage({
   onSubmit,
 }: LoginPageProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
   const isRegisterMode = mode === 'register'
 
   return (
@@ -48,25 +50,45 @@ export function LoginPage({
 
           <label>
             <span>Password</span>
-            <input
-              autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
-              type="password"
-              value={password}
-              onChange={(event) => onPasswordChange(event.target.value)}
-              required
-            />
+            <div className="password-field">
+              <input
+                autoComplete={isRegisterMode ? 'new-password' : 'current-password'}
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => onPasswordChange(event.target.value)}
+                required
+              />
+              <button
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+              >
+                👁️
+              </button>
+            </div>
           </label>
 
           {isRegisterMode ? (
             <label>
               <span>Confirm password</span>
-              <input
-                autoComplete="new-password"
-                type="password"
-                value={passwordConfirmation}
-                onChange={(event) => onPasswordConfirmationChange(event.target.value)}
-                required
-              />
+              <div className="password-field">
+                <input
+                  autoComplete="new-password"
+                  type={showPasswordConfirmation ? 'text' : 'password'}
+                  value={passwordConfirmation}
+                  onChange={(event) => onPasswordConfirmationChange(event.target.value)}
+                  required
+                />
+                <button
+                  aria-label={
+                    showPasswordConfirmation ? 'Hide password confirmation' : 'Show password confirmation'
+                  }
+                  type="button"
+                  onClick={() => setShowPasswordConfirmation((current) => !current)}
+                >
+                  👁️
+                </button>
+              </div>
             </label>
           ) : null}
 

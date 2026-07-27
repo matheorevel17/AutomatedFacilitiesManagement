@@ -118,7 +118,42 @@
   box-shadow: 0 0 0 4px rgba(31, 95, 139, 0.08);
 }
 
-.login-form button,
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 3.1rem;
+}
+
+.login-form .password-field button {
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.login-form .password-field button:hover {
+  background: rgba(15, 23, 42, 0.06);
+  box-shadow: none;
+}
+
+.login-form .password-field button:active {
+  transform: translateY(-50%);
+}
+
+.login-form > button,
 .logout-button,
 .management-form button,
 .secondary-button,
@@ -137,7 +172,7 @@
     background 0.15s ease;
 }
 
-.login-form button:hover,
+.login-form > button:hover,
 .logout-button:hover,
 .management-form button:hover,
 .secondary-button:hover,
@@ -146,7 +181,7 @@
   box-shadow: 0 10px 24px rgba(31, 95, 139, 0.18);
 }
 
-.login-form button:active,
+.login-form > button:active,
 .logout-button:active,
 .management-form button:active,
 .secondary-button:active,
@@ -154,7 +189,7 @@
   transform: translateY(1px);
 }
 
-.login-form button:disabled,
+.login-form > button:disabled,
 .management-form button:disabled {
   opacity: 0.7;
   cursor: wait;
