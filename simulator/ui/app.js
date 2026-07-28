@@ -1,4 +1,9 @@
 const form = document.querySelector('#simulator-form')
+const configModal = document.querySelector('#config-modal')
+const openConfigButton = document.querySelector('#open-config-button')
+const openConfigButtonSecondary = document.querySelector('#open-config-button-secondary')
+const closeConfigButton = document.querySelector('#close-config-button')
+const cancelConfigButton = document.querySelector('#cancel-config-button')
 const loadOptionsButton = document.querySelector('#load-options-button')
 const facilitySelect = document.querySelector('#facility-select')
 const toolSelect = document.querySelector('#tool-select')
@@ -14,6 +19,14 @@ const sendButton = document.querySelector('#send-button')
 let facilities = []
 let generatedReadings = []
 let tools = []
+
+function openConfigModal() {
+  configModal.hidden = false
+}
+
+function closeConfigModal() {
+  configModal.hidden = true
+}
 
 function getNumber(formData, name) {
   return Number(formData.get(name))
@@ -38,6 +51,27 @@ function buildPayload(formData) {
 function setStatus(message, type = '') {
   statusBox.className = `status-card ${type}`.trim()
   statusBox.textContent = message
+}
+
+function formatThreshold(value, unit) {
+  return `${Number(value).toFixed(2)} ${unit}`
+}
+
+function renderRangeThresholds(tool) {
+  if (!tool.range_thresholds) {
+    return ''
+  }
+
+  const { critical, normal, rule, warning } = tool.range_thresholds
+
+  return `
+    <ul>
+      <li><strong>Normal:</strong> ${formatThreshold(normal.min, tool.unit)} to ${formatThreshold(normal.max, tool.unit)}</li>
+      <li><strong>Warning:</strong> ${formatThreshold(warning.low_min, tool.unit)} to below ${formatThreshold(warning.low_max, tool.unit)}, or above ${formatThreshold(warning.high_min, tool.unit)} to ${formatThreshold(warning.high_max, tool.unit)}</li>
+      <li><strong>Critical:</strong> below ${formatThreshold(critical.below, tool.unit)}, or above ${formatThreshold(critical.above, tool.unit)}</li>
+    </ul>
+    <p>${rule}</p>
+  `
 }
 
 function renderOptions(select, options, placeholder) {
@@ -84,6 +118,7 @@ function syncSelectedTool() {
   referenceCard.innerHTML = `
     <strong>Reference range: ${selectedTool.normal_min} to ${selectedTool.normal_max} ${selectedTool.unit}</strong>
     <p>${selectedTool.normal_reference_note}</p>
+    ${renderRangeThresholds(selectedTool)}
   `
 }
 
@@ -186,6 +221,15 @@ async function loadOptions() {
   }
 }
 
+openConfigButton.addEventListener('click', openConfigModal)
+openConfigButtonSecondary.addEventListener('click', openConfigModal)
+closeConfigButton.addEventListener('click', closeConfigModal)
+cancelConfigButton.addEventListener('click', closeConfigModal)
+configModal.addEventListener('click', (event) => {
+  if (event.target === configModal) {
+    closeConfigModal()
+  }
+})
 loadOptionsButton.addEventListener('click', loadOptions)
 facilitySelect.addEventListener('change', syncToolsForFacility)
 toolSelect.addEventListener('change', syncSelectedTool)
@@ -219,6 +263,7 @@ form.addEventListener('submit', async (event) => {
     renderSummary('Generated', body.summary)
     renderReadings(generatedReadings)
     sendButton.disabled = generatedReadings.length === 0
+    closeConfigModal()
   } catch (error) {
     setStatus(error instanceof Error ? error.message : 'Request failed.', 'error')
   } finally {

@@ -15,10 +15,59 @@
           This interface is separated from the monitoring app. It generates sensor readings and sends them to the
           Laravel cloud ingestion API.
         </p>
+        <div class="hero-actions">
+          <button id="open-config-button" type="button">Configure simulation</button>
+        </div>
       </section>
 
       <section class="layout">
-        <form id="simulator-form" class="panel form-panel">
+        <section class="panel result-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Result</p>
+              <h2>Last API response</h2>
+            </div>
+            <div class="panel-actions">
+              <button id="open-config-button-secondary" class="secondary-button" type="button">
+                Configure simulation
+              </button>
+              <button id="send-button" type="button" disabled>Send generated data</button>
+            </div>
+          </div>
+
+          <div id="status" class="status-card">No request sent yet.</div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Tool</th>
+                  <th>Value</th>
+                  <th>Unit</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="readings-body">
+                <tr>
+                  <td colspan="5">Generated readings will appear here.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <div id="config-modal" class="modal-backdrop" hidden>
+        <form id="simulator-form" class="panel form-panel modal-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Configuration</p>
+              <h2>Simulation parameters</h2>
+            </div>
+            <button id="close-config-button" class="secondary-button" type="button">Close</button>
+          </div>
+
           <label>
             <span>API URL</span>
             <input
@@ -107,40 +156,10 @@
 
           <div class="button-row">
             <button id="generate-button" type="submit">Generate data</button>
-            <button id="send-button" class="secondary-button" type="button" disabled>Send generated data</button>
+            <button id="cancel-config-button" class="secondary-button" type="button">Cancel</button>
           </div>
         </form>
-
-        <section class="panel result-panel">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">Result</p>
-              <h2>Last API response</h2>
-            </div>
-          </div>
-
-          <div id="status" class="status-card">No request sent yet.</div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Tool</th>
-                  <th>Value</th>
-                  <th>Unit</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="readings-body">
-                <tr>
-                  <td colspan="5">Generated readings will appear here.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
+      </div>
     </main>
 
     <script src="/app.js" type="module"></script>

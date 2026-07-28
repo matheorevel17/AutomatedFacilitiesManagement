@@ -68,6 +68,10 @@ function formatLastReceived(minutes: number | null) {
   return `${minutes} minutes ago`
 }
 
+function formatThreshold(value: number, unit: string) {
+  return `${value.toFixed(2)} ${unit}`
+}
+
 export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
@@ -526,6 +530,30 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
             <div className="reference-note">
               <span className="list-meta">Range review</span>
               <p>{selectedTool.normal_reference_note}</p>
+            </div>
+
+            <div className="reference-note">
+              <span className="list-meta">Detection thresholds</span>
+              <div className="threshold-list">
+                <p>
+                  <strong>Normal:</strong>{' '}
+                  {formatThreshold(selectedTool.range_thresholds.normal.min, selectedTool.unit)} to{' '}
+                  {formatThreshold(selectedTool.range_thresholds.normal.max, selectedTool.unit)}
+                </p>
+                <p>
+                  <strong>Warning:</strong>{' '}
+                  {formatThreshold(selectedTool.range_thresholds.warning.low_min, selectedTool.unit)} to below{' '}
+                  {formatThreshold(selectedTool.range_thresholds.warning.low_max, selectedTool.unit)}, or above{' '}
+                  {formatThreshold(selectedTool.range_thresholds.warning.high_min, selectedTool.unit)} to{' '}
+                  {formatThreshold(selectedTool.range_thresholds.warning.high_max, selectedTool.unit)}
+                </p>
+                <p>
+                  <strong>Critical:</strong> below{' '}
+                  {formatThreshold(selectedTool.range_thresholds.critical.below, selectedTool.unit)}, or above{' '}
+                  {formatThreshold(selectedTool.range_thresholds.critical.above, selectedTool.unit)}
+                </p>
+                <p>{selectedTool.range_thresholds.rule}</p>
+              </div>
             </div>
 
             <div className="card-actions">

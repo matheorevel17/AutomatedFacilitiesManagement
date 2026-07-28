@@ -31,6 +31,23 @@ export function LoginPage({
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
   const isRegisterMode = mode === 'register'
 
+  function handleModeChange() {
+    setShowPassword(false)
+    setShowPasswordConfirmation(false)
+    onPasswordConfirmationChange('')
+
+    if (isRegisterMode) {
+      onEmailChange('admin@stagebali.test')
+      onPasswordChange('password')
+      setMode('login')
+      return
+    }
+
+    onEmailChange('')
+    onPasswordChange('')
+    setMode('register')
+  }
+
   return (
     <main className="app-shell">
       <section className="auth-panel">
@@ -102,7 +119,7 @@ export function LoginPage({
         <button
           className="auth-switch-button"
           type="button"
-          onClick={() => setMode((current) => (current === 'login' ? 'register' : 'login'))}
+          onClick={handleModeChange}
         >
           {isRegisterMode ? 'Already have an account? Login' : 'Create a new account'}
         </button>

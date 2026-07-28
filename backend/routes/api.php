@@ -16,9 +16,9 @@ use Illuminate\Validation\ValidationException;
 if (! function_exists('classifyIncomingSensorReading')) {
     function classifyIncomingSensorReading(AutomatedTool $tool, float $value): string
     {
-        $normalMin = (float) $tool->normal_min;
-        $normalMax = (float) $tool->normal_max;
-        $range = max($normalMax - $normalMin, 1);
+        $thresholds = getToolRangeThresholds($tool);
+        $normalMin = $thresholds['normal']['min'];
+        $normalMax = $thresholds['normal']['max'];
 
         if ($value >= $normalMin && $value <= $normalMax) {
             return 'normal';
@@ -26,7 +26,38 @@ if (! function_exists('classifyIncomingSensorReading')) {
 
         $distance = $value < $normalMin ? $normalMin - $value : $value - $normalMax;
 
-        return $distance > ($range * 0.2) ? 'critical' : 'warning';
+        return $distance > $thresholds['warning_buffer'] ? 'critical' : 'warning';
+    }
+}
+
+if (! function_exists('getToolRangeThresholds')) {
+    function getToolRangeThresholds(AutomatedTool $tool): array
+    {
+        $normalMin = round((float) $tool->normal_min, 2);
+        $normalMax = round((float) $tool->normal_max, 2);
+        $range = max($normalMax - $normalMin, 1);
+        $warningBuffer = round($range * 0.2, 2);
+        $warningLowMin = round($normalMin - $warningBuffer, 2);
+        $warningHighMax = round($normalMax + $warningBuffer, 2);
+
+        return [
+            'normal' => [
+                'min' => $normalMin,
+                'max' => $normalMax,
+            ],
+            'warning' => [
+                'low_min' => $warningLowMin,
+                'low_max' => $normalMin,
+                'high_min' => $normalMax,
+                'high_max' => $warningHighMax,
+            ],
+            'critical' => [
+                'below' => $warningLowMin,
+                'above' => $warningHighMax,
+            ],
+            'warning_buffer' => $warningBuffer,
+            'rule' => 'Normal is inside the configured range. Warning is outside the range but within 20% of the range width. Critical is more than 20% outside the range.',
+        ];
     }
 }
 
@@ -161,10 +192,10 @@ Route::get('/cloud/simulator-options', function (Request $request) {
             'status',
         ]);
 
-    $tools->each(fn (AutomatedTool $tool) => $tool->setAttribute(
-        'normal_reference_note',
-        getToolRangeReference($tool->type),
-    ));
+    $tools->each(function (AutomatedTool $tool): void {
+        $tool->setAttribute('normal_reference_note', getToolRangeReference($tool->type));
+        $tool->setAttribute('range_thresholds', getToolRangeThresholds($tool));
+    });
 
     return response()->json([
         'facilities' => Facility::query()
@@ -494,6 +525,7 @@ Route::middleware('web')->group(function (): void {
                 $tool->setAttribute('reporting_level', $reporting['level']);
                 $tool->setAttribute('minutes_since_last_reading', $reporting['minutes_since_last_reading']);
                 $tool->setAttribute('normal_reference_note', getToolRangeReference($tool->type));
+                $tool->setAttribute('range_thresholds', getToolRangeThresholds($tool));
             });
 
             return response()->json([

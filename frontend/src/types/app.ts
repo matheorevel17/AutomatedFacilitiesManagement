@@ -226,6 +226,24 @@ export type AutomatedToolsData = {
     normal_min: string
     normal_reference_note: string
     open_alerts_count: number
+    range_thresholds: {
+      critical: {
+        above: number
+        below: number
+      }
+      normal: {
+        max: number
+        min: number
+      }
+      rule: string
+      warning: {
+        high_max: number
+        high_min: number
+        low_max: number
+        low_min: number
+      }
+      warning_buffer: number
+    }
     reporting_level: string
     reporting_status: string
     status: string

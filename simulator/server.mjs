@@ -7,6 +7,7 @@ import { buildConfig, createReadings, loadEnvFile, sendPayload } from './lib/sim
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const publicDir = resolve(scriptDir, 'ui')
+const host = process.env.HOST || '0.0.0.0'
 const port = Number(process.env.PORT || 5174)
 
 loadEnvFile(resolve(scriptDir, '.env'))
@@ -174,6 +175,6 @@ const server = createServer((request, response) => {
   serveStatic(request, response)
 })
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Simulator UI running at http://localhost:${port}`)
+server.listen(port, host, () => {
+  console.log(`Simulator UI running at http://${host}:${port}`)
 })

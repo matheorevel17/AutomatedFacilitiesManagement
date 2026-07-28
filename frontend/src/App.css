@@ -507,6 +507,20 @@
   color: var(--text);
 }
 
+.threshold-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.threshold-list p {
+  margin: 0;
+}
+
+.threshold-list strong {
+  color: var(--text-h);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
