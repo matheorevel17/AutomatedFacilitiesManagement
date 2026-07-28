@@ -11,6 +11,7 @@ const unitInput = document.querySelector('#unit-input')
 const normalMinInput = form.elements.normalMin
 const normalMaxInput = form.elements.normalMax
 const meanInput = form.elements.mean
+const apiUrlInput = form.elements.apiUrl
 const referenceCard = document.querySelector('#reference-card')
 const statusBox = document.querySelector('#status')
 const readingsBody = document.querySelector('#readings-body')
@@ -221,6 +222,19 @@ async function loadOptions() {
   }
 }
 
+async function loadRuntimeConfig() {
+  try {
+    const response = await fetch('/api/config')
+    const body = await response.json()
+
+    if (response.ok && body.apiUrl) {
+      apiUrlInput.value = body.apiUrl
+    }
+  } catch {
+    // Keep the local default when runtime config is unavailable.
+  }
+}
+
 openConfigButton.addEventListener('click', openConfigModal)
 openConfigButtonSecondary.addEventListener('click', openConfigModal)
 closeConfigButton.addEventListener('click', closeConfigModal)
@@ -312,4 +326,5 @@ sendButton.addEventListener('click', async () => {
   }
 })
 
+await loadRuntimeConfig()
 loadOptions()

@@ -37,11 +37,35 @@ async function readJsonBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
+function isLocalBackendUrl(value) {
+  try {
+    const url = new URL(value)
+
+    return ['localhost', '127.0.0.1'].includes(url.hostname) && url.port === '8000'
+  } catch {
+    return false
+  }
+}
+
+function resolveApiUrl(value) {
+  const apiUrl = String(value ?? '').trim()
+
+  if ((!apiUrl || isLocalBackendUrl(apiUrl)) && process.env.API_URL) {
+    return process.env.API_URL
+  }
+
+  return apiUrl || process.env.API_URL || 'http://localhost:8000/api/cloud/sensor-readings'
+}
+
+function resolveToken(value) {
+  return String(value ?? '').trim() || process.env.CLOUD_INGESTION_TOKEN || ''
+}
+
 function getRequestConfig(payload) {
   const source = {
     ...process.env,
-    API_URL: payload.apiUrl,
-    CLOUD_INGESTION_TOKEN: payload.token,
+    API_URL: resolveApiUrl(payload.apiUrl),
+    CLOUD_INGESTION_TOKEN: resolveToken(payload.token),
     COUNT: payload.count,
     INTERVAL_MS: payload.intervalMs,
     MEAN: payload.mean,
@@ -57,7 +81,7 @@ function getRequestConfig(payload) {
 }
 
 function getOptionsUrl(apiUrl) {
-  const url = new URL(apiUrl || process.env.API_URL || 'http://localhost:8000/api/cloud/sensor-readings')
+  const url = new URL(resolveApiUrl(apiUrl))
 
   if (url.pathname.endsWith('/sensor-readings')) {
     url.pathname = url.pathname.replace(/\/sensor-readings$/, '/simulator-options')
@@ -70,10 +94,17 @@ function getOptionsUrl(apiUrl) {
   return url.toString()
 }
 
+function handleConfig(response) {
+  sendJson(response, 200, {
+    apiUrl: resolveApiUrl(''),
+    hasCloudToken: Boolean(process.env.CLOUD_INGESTION_TOKEN),
+  })
+}
+
 async function handleOptions(request, response) {
   try {
     const payload = await readJsonBody(request)
-    const token = payload.token || process.env.CLOUD_INGESTION_TOKEN || ''
+    const token = resolveToken(payload.token)
     const headers = {
       Accept: 'application/json',
     }
@@ -157,6 +188,11 @@ function serveStatic(request, response) {
 }
 
 const server = createServer((request, response) => {
+  if (request.method === 'GET' && request.url === '/api/config') {
+    handleConfig(response)
+    return
+  }
+
   if (request.method === 'POST' && request.url === '/api/options') {
     handleOptions(request, response)
     return
