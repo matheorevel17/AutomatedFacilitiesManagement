@@ -153,6 +153,24 @@ if (! function_exists('getToolRangeReference')) {
     }
 }
 
+if (! function_exists('formatAlertType')) {
+    function formatAlertType(string $scenario, AutomatedTool $tool): string
+    {
+        $issue = match ($scenario) {
+            'possible_water_leak' => 'Possible water leak',
+            'low_water_level' => 'Low water level',
+            'water_pollution_detected' => 'Water pollution detected',
+            'poor_cooling_performance' => 'Poor cooling performance',
+            'high_humidity_level' => 'High humidity level',
+            'poor_air_quality' => 'Poor air quality',
+            'pollution_detected' => 'Pollution detected',
+            default => 'Abnormal sensor values',
+        };
+
+        return "{$issue} - {$tool->facility->name} - {$tool->name}";
+    }
+}
+
 Route::get('/health', function () {
     return response()->json([
         'name' => config('app.name'),
@@ -895,16 +913,7 @@ Route::middleware('web')->group(function (): void {
 
             $criticalCount = $abnormalReadings->where('status', 'critical')->count();
             $severity = $criticalCount > 0 ? 'high' : 'medium';
-            $alertType = match ($data['scenario']) {
-                'possible_water_leak' => 'possible_water_leak',
-                'low_water_level' => 'low_water_level',
-                'water_pollution_detected' => 'water_pollution_detected',
-                'poor_cooling_performance' => 'poor_cooling_performance',
-                'high_humidity_level' => 'high_humidity_level',
-                'poor_air_quality' => 'poor_air_quality',
-                'pollution_detected' => 'pollution_detected',
-                default => 'abnormal_sensor_values',
-            };
+            $alertType = formatAlertType($data['scenario'], $tool);
 
             $alert = Alert::query()->updateOrCreate(
                 [
