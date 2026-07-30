@@ -72,9 +72,19 @@ function formatThreshold(value: number, unit: string) {
   return `${value.toFixed(2)} ${unit}`
 }
 
+function formatDate(value: string | null) {
+  if (!value) {
+    return 'Not set'
+  }
+
+  return new Date(value).toLocaleDateString()
+}
+
 export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: AutomatedToolsPageProps) {
   const [form, setForm] = useState<ToolFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingToolId, setEditingToolId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -85,9 +95,14 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
   const selectedFacilityId = form.facility_id || (
     automatedToolsData?.facilities[0] ? String(automatedToolsData.facilities[0].id) : ''
   )
-  const filteredTools = automatedToolsData?.tools.filter((tool) => (
-    facilityFilterId === 'all' || String(tool.facility_id) === facilityFilterId
-  )) ?? []
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredTools = automatedToolsData?.tools.filter((tool) => {
+    const matchesFacility = facilityFilterId === 'all' || String(tool.facility_id) === facilityFilterId
+    const matchesStatus = statusFilter === 'all' || tool.status === statusFilter
+    const matchesSearch = !normalizedSearchQuery || tool.name.toLowerCase().includes(normalizedSearchQuery)
+
+    return matchesFacility && matchesStatus && matchesSearch
+  }) ?? []
   const selectedFilterFacility = automatedToolsData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
   )
@@ -278,24 +293,57 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
             </button>
           </div>
 
-          <label className="list-filter">
-            <span>Display</span>
-            <select
-              value={facilityFilterId}
-              onChange={(event) => {
-                setFacilityFilterId(event.target.value)
-                setCurrentPage(1)
-                setSelectedToolId(null)
-              }}
-            >
-              <option value="all">All facilities</option>
-              {automatedToolsData?.facilities.map((facility) => (
-                <option key={facility.id} value={facility.id}>
-                  {facility.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="list-filter-row">
+            <label className="list-filter">
+              <span>Facility</span>
+              <select
+                value={facilityFilterId}
+                onChange={(event) => {
+                  setFacilityFilterId(event.target.value)
+                  setCurrentPage(1)
+                  setSelectedToolId(null)
+                }}
+              >
+                <option value="all">All facilities</option>
+                {automatedToolsData?.facilities.map((facility) => (
+                  <option key={facility.id} value={facility.id}>
+                    {facility.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="list-filter">
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value)
+                  setCurrentPage(1)
+                  setSelectedToolId(null)
+                }}
+              >
+                <option value="all">All status</option>
+                <option value="active">Active</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+
+            <label className="list-filter search-filter">
+              <span>Search by name</span>
+              <input
+                placeholder="Example: pressure"
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value)
+                  setCurrentPage(1)
+                  setSelectedToolId(null)
+                }}
+              />
+            </label>
+          </div>
 
           <div className="tool-list">
             {paginatedTools.length ? (
@@ -341,7 +389,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
                 </article>
               ))
             ) : (
-              <p className="empty-state">No automated tools match this facility filter.</p>
+              <p className="empty-state">No automated tools match these filters.</p>
             )}
           </div>
 
@@ -519,7 +567,7 @@ export function AutomatedToolsPage({ automatedToolsData, onDataChanged }: Automa
               </div>
               <div>
                 <span className="list-meta">Installation date</span>
-                <strong>{selectedTool.installation_date ?? 'Not set'}</strong>
+                <strong>{formatDate(selectedTool.installation_date)}</strong>
               </div>
               <div>
                 <span className="list-meta">Tool status</span>

@@ -396,7 +396,11 @@
   background: #fff;
   color: var(--text-h);
   font: inherit;
-  resize: vertical;
+}
+
+.management-form textarea {
+  min-height: 8rem;
+  resize: none;
 }
 
 .management-form input:focus,
@@ -419,11 +423,16 @@
   gap: 0.9rem;
 }
 
+.list-filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
 .list-filter {
   display: grid;
   gap: 0.45rem;
-  max-width: 20rem;
-  margin-bottom: 1rem;
 }
 
 .list-filter span {
@@ -434,7 +443,8 @@
   text-transform: uppercase;
 }
 
-.list-filter select {
+.list-filter select,
+.list-filter input {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -444,7 +454,8 @@
   padding: 0.8rem 0.9rem;
 }
 
-.list-filter select:focus {
+.list-filter select:focus,
+.list-filter input:focus {
   border-color: rgba(31, 95, 139, 0.45);
   box-shadow: 0 0 0 4px rgba(31, 95, 139, 0.08);
   outline: none;
@@ -780,13 +791,14 @@
     padding: 1.25rem;
   }
 
-    .stack-grid,
-    .alerts-grid,
-    .maintenance-grid,
-    .management-layout,
-    .tool-list,
-    .form-grid,
-    .facility-grid,
+  .stack-grid,
+  .alerts-grid,
+  .maintenance-grid,
+  .management-layout,
+  .tool-list,
+  .form-grid,
+  .facility-grid,
+  .list-filter-row,
   .status-panel,
   .facilities-layout {
     grid-template-columns: 1fr;

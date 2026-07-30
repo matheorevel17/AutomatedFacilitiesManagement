@@ -86,6 +86,8 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
     triggered_at: getDefaultDateTimeLocal(),
   })
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingAlertId, setEditingAlertId] = useState<number | null>(null)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
@@ -101,9 +103,22 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
   ) ?? []
 
   const selectedToolId = form.tool_id || (toolsForFacility[0] ? String(toolsForFacility[0].id) : '')
-  const filteredAlerts = alertsData?.alerts.filter((alert) => (
-    facilityFilterId === 'all' || String(alert.facility_id) === facilityFilterId
-  )) ?? []
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredAlerts = alertsData?.alerts.filter((alert) => {
+    const matchesFacility = facilityFilterId === 'all' || String(alert.facility_id) === facilityFilterId
+    const matchesStatus = statusFilter === 'all' || alert.status === statusFilter
+    const searchableText = [
+      alert.alert_type,
+      alert.message,
+      alert.facility?.name,
+      alert.facility?.location,
+      alert.tool?.name,
+      alert.tool?.type,
+    ].join(' ').toLowerCase()
+    const matchesSearch = !normalizedSearchQuery || searchableText.includes(normalizedSearchQuery)
+
+    return matchesFacility && matchesStatus && matchesSearch
+  }) ?? []
   const selectedFilterFacility = alertsData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
   )
@@ -273,23 +288,54 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
             </button>
           </div>
 
-          <label className="list-filter">
-            <span>Display</span>
-            <select
-              value={facilityFilterId}
-              onChange={(event) => {
-                setFacilityFilterId(event.target.value)
-                setCurrentPage(1)
-              }}
-            >
-              <option value="all">All facilities</option>
-              {alertsData?.facilities.map((facility) => (
-                <option key={facility.id} value={facility.id}>
-                  {facility.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="list-filter-row">
+            <label className="list-filter">
+              <span>Facility</span>
+              <select
+                value={facilityFilterId}
+                onChange={(event) => {
+                  setFacilityFilterId(event.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="all">All facilities</option>
+                {alertsData?.facilities.map((facility) => (
+                  <option key={facility.id} value={facility.id}>
+                    {facility.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="list-filter">
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="all">All status</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </label>
+
+            <label className="list-filter">
+              <span>Search</span>
+              <input
+                placeholder="Alert, facility, tool..."
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value)
+                  setCurrentPage(1)
+                }}
+              />
+            </label>
+          </div>
 
           <div className="alerts-grid">
             {paginatedAlerts.length ? (
@@ -328,7 +374,7 @@ export function AlertsPage({ alertsData, onDataChanged }: AlertsPageProps) {
                 </article>
               ))
             ) : (
-              <p className="empty-state">No alerts match this facility filter.</p>
+              <p className="empty-state">No alerts match these filters.</p>
             )}
           </div>
 

@@ -67,6 +67,8 @@ export function MaintenanceTasksPage({
 }: MaintenanceTasksPageProps) {
   const [form, setForm] = useState<TaskFormState>(emptyForm)
   const [facilityFilterId, setFacilityFilterId] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false)
@@ -86,9 +88,23 @@ export function MaintenanceTasksPage({
   const alertsForFacility = maintenanceTasksData?.alerts.filter(
     (alert) => String(alert.facility_id) === selectedFacilityId,
   ) ?? []
-  const filteredTasks = maintenanceTasksData?.tasks.filter((task) => (
-    facilityFilterId === 'all' || String(task.facility_id) === facilityFilterId
-  )) ?? []
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase()
+  const filteredTasks = maintenanceTasksData?.tasks.filter((task) => {
+    const matchesFacility = facilityFilterId === 'all' || String(task.facility_id) === facilityFilterId
+    const matchesStatus = statusFilter === 'all' || task.status === statusFilter
+    const searchableText = [
+      task.title,
+      task.description,
+      task.facility?.name,
+      task.tool?.name,
+      task.tool?.type,
+      task.alert?.alert_type,
+      task.assignedTo?.name,
+    ].join(' ').toLowerCase()
+    const matchesSearch = !normalizedSearchQuery || searchableText.includes(normalizedSearchQuery)
+
+    return matchesFacility && matchesStatus && matchesSearch
+  }) ?? []
   const selectedFilterFacility = maintenanceTasksData?.facilities.find(
     (facility) => String(facility.id) === facilityFilterId,
   )
@@ -259,23 +275,54 @@ export function MaintenanceTasksPage({
             </button>
           </div>
 
-          <label className="list-filter">
-            <span>Display</span>
-            <select
-              value={facilityFilterId}
-              onChange={(event) => {
-                setFacilityFilterId(event.target.value)
-                setCurrentPage(1)
-              }}
-            >
-              <option value="all">All facilities</option>
-              {maintenanceTasksData?.facilities.map((facility) => (
-                <option key={facility.id} value={facility.id}>
-                  {facility.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="list-filter-row">
+            <label className="list-filter">
+              <span>Facility</span>
+              <select
+                value={facilityFilterId}
+                onChange={(event) => {
+                  setFacilityFilterId(event.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="all">All facilities</option>
+                {maintenanceTasksData?.facilities.map((facility) => (
+                  <option key={facility.id} value={facility.id}>
+                    {facility.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="list-filter">
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => {
+                  setStatusFilter(event.target.value)
+                  setCurrentPage(1)
+                }}
+              >
+                <option value="all">All status</option>
+                <option value="pending">Pending</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </label>
+
+            <label className="list-filter">
+              <span>Search</span>
+              <input
+                placeholder="Task, facility, tool..."
+                type="search"
+                value={searchQuery}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value)
+                  setCurrentPage(1)
+                }}
+              />
+            </label>
+          </div>
 
           <div className="maintenance-grid">
             {paginatedTasks.length ? (
@@ -321,7 +368,7 @@ export function MaintenanceTasksPage({
                 </article>
               ))
             ) : (
-              <p className="empty-state">No maintenance tasks match this facility filter.</p>
+              <p className="empty-state">No maintenance tasks match these filters.</p>
             )}
           </div>
 
