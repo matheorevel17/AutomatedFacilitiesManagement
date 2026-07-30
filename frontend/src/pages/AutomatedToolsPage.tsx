@@ -65,7 +65,23 @@ function formatLastReceived(minutes: number | null) {
     return '1 minute ago'
   }
 
-  return `${minutes} minutes ago`
+  if (minutes < 60) {
+    return `${minutes} minutes ago`
+  }
+
+  if (minutes < 1_440) {
+    const hours = Math.max(1, Math.round(minutes / 60))
+
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`
+  }
+
+  const days = Math.max(1, Math.round(minutes / 1_440))
+
+  if (days === 1) {
+    return '1 day ago'
+  }
+
+  return `${days} days ago`
 }
 
 function formatThreshold(value: number, unit: string) {

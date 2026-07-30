@@ -26,7 +26,23 @@ function formatLastReceived(minutes: number | null) {
     return 'Less than 1 minute ago'
   }
 
-  return `${minutes} min ago`
+  if (minutes < 60) {
+    return `${minutes} min ago`
+  }
+
+  if (minutes < 1_440) {
+    const hours = Math.max(1, Math.round(minutes / 60))
+
+    return hours === 1 ? '1 hour ago' : `${hours} hours ago`
+  }
+
+  const days = Math.max(1, Math.round(minutes / 1_440))
+
+  if (days === 1) {
+    return '1 day ago'
+  }
+
+  return `${days} days ago`
 }
 
 export function DashboardPage({ dashboard, user }: DashboardPageProps) {
