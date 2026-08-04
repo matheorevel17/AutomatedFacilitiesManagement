@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -62,7 +63,7 @@ if (! function_exists('getToolRangeThresholds')) {
 }
 
 if (! function_exists('storeIncomingSensorReading')) {
-    function storeIncomingSensorReading(array $data): SensorReading
+    function storeIncomingSensorReading(array $data, ?string $ingestionBatchId = null): SensorReading
     {
         $tool = AutomatedTool::query()->findOrFail($data['tool_id']);
 
@@ -84,6 +85,7 @@ if (! function_exists('storeIncomingSensorReading')) {
 
         return SensorReading::query()->create([
             'tool_id' => $tool->id,
+            'ingestion_batch_id' => $ingestionBatchId,
             'recorded_at' => $data['recorded_at'] ?? now(),
             'value' => $value,
             'unit' => $tool->unit,
@@ -258,8 +260,12 @@ Route::post('/cloud/sensor-readings', function (Request $request) {
             ]),
         ]];
 
+    $ingestionBatchId = (string) Str::uuid();
+
     $readings = DB::transaction(
-        fn () => collect($data['readings'])->map(fn (array $reading) => storeIncomingSensorReading($reading)),
+        fn () => collect($data['readings'])->map(
+            fn (array $reading) => storeIncomingSensorReading($reading, $ingestionBatchId),
+        ),
     );
 
     return response()->json([
@@ -270,6 +276,7 @@ Route::post('/cloud/sensor-readings', function (Request $request) {
             'warning' => $readings->where('status', 'warning')->count(),
             'critical' => $readings->where('status', 'critical')->count(),
         ],
+        'ingestion_batch_id' => $ingestionBatchId,
         'readings' => $readings->values(),
     ], 201);
 });
@@ -743,6 +750,7 @@ Route::middleware('web')->group(function (): void {
                 ->get([
                     'id',
                     'tool_id',
+                    'ingestion_batch_id',
                     'recorded_at',
                     'value',
                     'unit',
@@ -766,7 +774,8 @@ Route::middleware('web')->group(function (): void {
                         'normal_max',
                         'unit',
                         'status',
-                    ]),
+                ]),
+                'latest_batch_id' => $readings->first()?->ingestion_batch_id,
                 'recent_readings' => $readings,
                 'stats' => [
                     'readings' => SensorReading::query()->count(),
@@ -812,6 +821,7 @@ Route::middleware('web')->group(function (): void {
             $normalMax = (float) $data['normal_max'];
             $range = max($normalMax - $normalMin, 1);
             $baseTime = now()->subMinutes((int) $data['count'] * 5);
+            $ingestionBatchId = (string) Str::uuid();
             $readings = collect();
 
             SensorReading::query()
@@ -847,6 +857,7 @@ Route::middleware('web')->group(function (): void {
 
                 $readings->push(SensorReading::query()->create([
                     'tool_id' => $tool->id,
+                    'ingestion_batch_id' => $ingestionBatchId,
                     'recorded_at' => $baseTime->copy()->addMinutes($index * 5),
                     'value' => $value,
                     'unit' => $tool->unit,
@@ -862,6 +873,7 @@ Route::middleware('web')->group(function (): void {
                     'warning' => $readings->where('status', 'warning')->count(),
                     'critical' => $readings->where('status', 'critical')->count(),
                 ],
+                'ingestion_batch_id' => $ingestionBatchId,
                 'readings' => $readings->values(),
             ], 201);
         });
