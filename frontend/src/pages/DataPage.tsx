@@ -67,6 +67,7 @@ function localDateTimeToApiValue(value: string) {
 }
 
 export function DataPage({ data, onAlertCreated, onRefresh }: DataPageProps) {
+  const [dataViewMode, setDataViewMode] = useState<'all' | 'latest_batch'>('all')
   const [facilityFilter, setFacilityFilter] = useState('all')
   const [toolFilter, setToolFilter] = useState('all')
   const [alertDraft, setAlertDraft] = useState<AlertDraftState>(emptyAlertDraft)
@@ -82,7 +83,13 @@ export function DataPage({ data, onAlertCreated, onRefresh }: DataPageProps) {
     ? toolFilter
     : 'all'
 
-  const selectedReadings = data?.recent_readings.filter((reading) => {
+  const readingsForView = dataViewMode === 'latest_batch'
+    ? data?.latest_batch_id
+      ? data.recent_readings.filter((reading) => reading.ingestion_batch_id === data.latest_batch_id)
+      : []
+    : data?.recent_readings ?? []
+
+  const selectedReadings = readingsForView.filter((reading) => {
     const readingFacilityId = reading.tool?.facility_id ? String(reading.tool.facility_id) : ''
     const matchesFacility = facilityFilter === 'all' || readingFacilityId === facilityFilter
     const matchesTool = effectiveToolFilter === 'all' || String(reading.tool_id) === effectiveToolFilter
@@ -244,6 +251,20 @@ export function DataPage({ data, onAlertCreated, onRefresh }: DataPageProps) {
         </div>
 
         <div className="data-filter-row">
+          <label className="list-filter">
+            <span>Data view</span>
+            <select
+              value={dataViewMode}
+              onChange={(event) => {
+                setDataViewMode(event.target.value as 'all' | 'latest_batch')
+                setActionMessage(null)
+              }}
+            >
+              <option value="all">All recent data</option>
+              <option value="latest_batch">Latest sent batch</option>
+            </select>
+          </label>
+
           <label className="list-filter">
             <span>Facility</span>
             <select value={facilityFilter} onChange={handleFacilityChange}>

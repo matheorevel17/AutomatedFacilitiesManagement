@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['tool_id', 'recorded_at', 'value', 'unit', 'status'])]
+#[Fillable(['tool_id', 'ingestion_batch_id', 'recorded_at', 'value', 'unit', 'status'])]
 class SensorReading extends Model
 {
     protected $table = 'sensor_data';

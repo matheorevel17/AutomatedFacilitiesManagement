@@ -345,8 +345,10 @@ export type SimulationData = {
     status: string
     type: string
   }>
+  latest_batch_id: string | null
   recent_readings: Array<{
     id: number
+    ingestion_batch_id: string | null
     recorded_at: string
     status: string
     tool?: {
